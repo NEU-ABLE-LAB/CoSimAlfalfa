@@ -9,7 +9,6 @@ __pycache__/*
 
 launch.json
 alfalfa/*
-alflafa/setup.cfg
 temporary_data/*
 file_system_store/*
 
@@ -22,3 +21,4 @@ output/
 test.py
 
 idf_files/*
+alfalfa/setup.cfg
