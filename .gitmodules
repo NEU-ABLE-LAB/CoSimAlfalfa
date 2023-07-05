@@ -1,0 +1,5 @@
+[submodule "occupant_model"]
+    path = occupant_model
+    url = https://github.com/NEU-ABLE-LAB/Build_OBM.git
+    branch = main
+    ignore = dirty
