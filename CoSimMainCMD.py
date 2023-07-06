@@ -6,20 +6,23 @@ from joblib import Parallel, delayed
 
 # Import CoSim scripts
 from CoSimCore import CoSimCore
-from CoSimGUI import CoSimGUI
 from CoSimDict import DATA, SETTING, CONTROL
 from CoSimUtils import get_record_template, update_record
 
 # Import occupant model
 from occupant_model.src.model import OccupantModel
 from thermostat import thermostat
+import requests, socket, time, timeit, sys, socket
 
 
 if __name__ == "__main__":
+    start = timeit.default_timer()
     ## Workplace configuration
     dir_workspace = os.path.dirname(__file__)
     alfalfa_url = 'http://localhost'    # "http://192.168.99.126"
-
+    name_output_dir = 'output'
+    dir_output = os.path.join(dir_workspace, name_output_dir)    
+    dir_output_log_filename = os.path.join(dir_output, "logfile_{}.log".format(datetime.datetime.now().strftime("%Y%m%d_%H%M%S")))
 
     ## Simulation settings
     debug = True                # set this True to print additional information to the console
@@ -27,7 +30,8 @@ if __name__ == "__main__":
     time_end = datetime.datetime(2019, 12, 31, 0, 0, 0)
     time_step_size = 1
     #steps_to_run = 86400    # 60 days
-    steps_to_run = 86400 * 3    # 180 days
+    #steps_to_run = 86400 * 3    # 180 days
+    steps_to_run = 60 # 60 minutes
 
     # Choose one of the control mode
     current_control_mode = CONTROL.SCHEDULE_AND_OCCUPANT_MODEL
@@ -46,8 +50,8 @@ if __name__ == "__main__":
     #worker:
     #   deploy:
     #       replicas: 2 
-    num_models = 3
-    num_parallel_process = 3
+    num_models = 4
+    num_parallel_process = 2
 
 
     ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
@@ -105,10 +109,9 @@ if __name__ == "__main__":
                            })
 
 
-    ## Initialize Cosimulation Core
-    print(f'=Initializing cosim-sessions...')
-    time_tick = time.time_ns()
-    def initialize_cosim_session_each(index_input, input_each):
+    def run_each_session(index_input, input_each, steps_to_proceed):
+        # Initialization of CoSimCore
+        print(f'=Initializing cosim-session')
         cosim_session = CoSimCore(alias='Model' + str(index_input+1) + ': ' + input_each[SETTING.BUILDING_MODEL_INFORMATION][SETTING.NAME_BUILDING_MODEL],
                                   building_model_information=input_each[SETTING.BUILDING_MODEL_INFORMATION],
                                   simulation_information=input_each[SETTING.SIMULATION_INFORMATION],
@@ -117,93 +120,70 @@ if __name__ == "__main__":
                                   test_default_model=False,
                                   debug=debug)
         cosim_session.initialize()
-        return cosim_session
-    cosim_sessions = Parallel(n_jobs=num_parallel_process)\
-                             (delayed(initialize_cosim_session_each)\
-                                     (index_input, input_each) for (index_input, input_each) in enumerate(list_input))
-    print(f'\t--> Complete!\n')
-    time_tock = time.time_ns()
-    print(f'\t--> Elapsed time to initialize cosim_sessions for {num_models} models: {(time_tock - time_tick)/1000000000}')
-
-    
-    ## Launch Simulation
-    # Note: EP error occurs when heating setpoint > cooling setpoint! --> Kunind needs to fix the occupant-based control to prevent this
-    print(f'=Start running simulations...')
-    time_tick = time.time_ns()
-    record = dict()
-    def update_model_each(cosim_session, steps_to_proceed):
+        print(f'\t--> Complete (alias: {cosim_session.alias}\n')
+        
+        # Run part (1): Initialize the record
+        print(f'=Running simulation (alias: {cosim_session.alias})...')
         output_step = cosim_session.retrieve_outputs()
         time_sim_input = output_step[DATA.TIME_SIM]
         record_each = get_record_template(name=cosim_session.alias,
-                                          time_start=time_start,
-                                          time_end=time_end,
-                                          conditioned_zones=cosim_session.conditioned_zones,
-                                          unconditioned_zones=cosim_session.unconditioned_zones,
-                                          is_initial_record=True,
-                                          output_step=output_step)
-        for _ in range(int(np.floor(float(steps_to_proceed)))):
-            time_tick = time.time_ns()
+                                        time_start=time_start,
+                                        time_end=time_end,
+                                        conditioned_zones=cosim_session.conditioned_zones,
+                                        unconditioned_zones=cosim_session.unconditioned_zones,
+                                        is_initial_record=True,
+                                        output_step=output_step)
+        
+        # Run part (2): Run the simulations
+        for index_step in range(int(np.floor(float(steps_to_proceed)))):
+            print(f'\t--> Step {index_step + 1} (alias: {cosim_session.alias})')
             control_input, control_information = \
                 cosim_session.compute_control(time_sim=time_sim_input,
-                                              control_mode=current_control_mode,
-                                              setpoints_manual=setpoint_manual_test,
-                                              schedule_info=None,
-                                              output_step=output_step)
-            time_tock = time.time_ns()
-            elapsed_time_control = (time_tock - time_tick)/1000000000
+                                            control_mode=current_control_mode,
+                                            setpoints_manual=setpoint_manual_test,
+                                            schedule_info=None,
+                                            output_step=output_step)
 
-            time_tick = time.time_ns()
             cosim_session.proceed_simulation(control_input=control_input,
-                                             control_information=control_information)
-            time_tock = time.time_ns()
-            elapsed_time_proceed = (time_tock - time_tick)/1000000000
+                                            control_information=control_information)
 
-            time_tick = time.time_ns()
-            output_step = cosim_session.retrieve_outputs()
+            output_step = cosim_session.retrieve_outputs(control_information=control_information)
             time_sim_input = output_step[DATA.TIME_SIM]
             update_record(output_step=output_step,
-                          record=record_each,
-                          conditioned_zones=cosim_session.conditioned_zones,
-                          unconditioned_zones=cosim_session.unconditioned_zones)
-            time_tock = time.time_ns()
-            elapsed_time_record = (time_tock - time_tick)/1000000000
-            print(f'\t--> Elapsed time for control={elapsed_time_control}/proceed={elapsed_time_proceed}/record={elapsed_time_record}/total={elapsed_time_control+elapsed_time_proceed+elapsed_time_record}\n')
-        return cosim_session.alias, record_each
+                        record=record_each,
+                        conditioned_zones=cosim_session.conditioned_zones,
+                        unconditioned_zones=cosim_session.unconditioned_zones)
 
-    record_aggregated = Parallel(n_jobs=num_parallel_process)\
-                                (delayed(update_model_each)\
-                                        (cosim_session, steps_to_run) for cosim_session in cosim_sessions)
-
-    for alias, record_each in record_aggregated:
-        record[alias] = record_each.copy()
-
-    time_tock = time.time_ns()
-    print(f'\t--> Elapsed time to simulate {steps_to_run} steps ({num_models} models): {(time_tock - time_tick)/1000000000}')
-
-    
-    ## Export outputs
-    print(f'=Start exporting data...')
-    time_tick = time.time_ns()
-    name_output_dir = 'output'
-    dir_output = os.path.join(dir_workspace, name_output_dir)
-
-    def export_record_each(uuid_prefix, cosim_session):
+        # Export the simulation result
+        print(f'\n=Exporting results (alias: {cosim_session.alias})...')
+        uuid_prefix = str(uuid.uuid4())
         model_prefix = cosim_session.alias.split(':')[0]
-        dir_output_file = os.path.join(dir_output, uuid_prefix + '_' + model_prefix + '.xlsx')
-        writer = pd.ExcelWriter(path=dir_output_file, engine='openpyxl')
-        record_setting = pd.DataFrame.from_dict(record[cosim_session.alias][DATA.SETTING])
-        record_data = pd.DataFrame.from_dict({**record[cosim_session.alias][DATA.INPUT], **record[cosim_session.alias][DATA.STATUS]})
-        record_setting.to_excel(writer, sheet_name=model_prefix + '_' + DATA.SETTING, index=False)  # writes to BytesIO buffer
-        record_data.to_excel(writer, sheet_name=model_prefix + '_' + DATA.DATA, index=False)
-        writer.save()
+        model_name = record_each[DATA.SETTING]['model_name'][0].replace(": ","_")
+        alpha_value = "a" + str(occupant_model_information[SETTING.TFT_ALPHA]).replace(".","")+ "_"
+        dir_output_file = os.path.join(dir_output, model_name + '_' + uuid_prefix + '_' +  alpha_value +'.gzip')
+        record_data = pd.DataFrame.from_dict({**record_each[DATA.INPUT], **record_each[DATA.STATUS]})
+        record_data.to_parquet(dir_output_file,compression='gzip')
+        print(f"\t--> File path (alias: {cosim_session.alias}): {dir_output_file}")
+        print(f"\t--> Data exported (alias: {cosim_session.alias}) to: {dir_output}")    
+
+        # Tear down
+        print(f'\n=Tearing down the model (alias: {cosim_session.alias})...')
+        cosim_session.alfalfa_client.stop(
+            cosim_session.model_id     # site_id
+        )
+        print(f'\t--> Tear down complete (alias: {cosim_session.alias})!\n')    
         return
-    uuid_prefix = str(uuid.uuid4())
-    Parallel(n_jobs=num_parallel_process)\
-            (delayed(export_record_each)\
-                    (uuid_prefix, cosim_session) for cosim_session in cosim_sessions)
-    time_tock = time.time_ns()
-    print(f"\t--> Data exported to: {dir_output}")
-    print(f'\t--> Elapsed time to export {steps_to_run} steps ({num_models} models): {(time_tock - time_tick)/1000000000}')
-    print("\n\n=Terminated!")
 
+    if num_parallel_process > 1:
+        Parallel(n_jobs=num_parallel_process)\
+                (delayed(run_each_session)\
+                        (index_input, input_each, steps_to_run) for (index_input, input_each) in enumerate(list_input))
+    else:
+        for index_input, input_each in enumerate(list_input):
+            run_each_session(index_input=index_input,
+                             input_each=input_each,
+                             steps_to_proceed=steps_to_run)
 
+    print("\n\n=Every simulation terminated!")
+    stop = timeit.default_timer()
+    print(f'\t--> Total Time: {stop - start} seconds')

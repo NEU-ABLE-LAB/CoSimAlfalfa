@@ -11,10 +11,6 @@ import pathlib
 from alfalfa_client import alfalfa_client as ac
 from CoSimDict import SETTING, DATA, CONTROL
 
-# Use dash-extensions instead of dash to use ServerSideOutput: Not store data as web-browser cache, but inside the server (file_system_store)
-from dash_extensions.enrich import DashProxy, Output, Input, State, ServersideOutput, html, dcc, ServersideOutputTransform
-
-
 class CoSimCore:
     def __init__(self,
                  alias: str,
@@ -272,7 +268,8 @@ class CoSimCore:
                     schedule_dataframe = pd.read_excel(io.BytesIO(schedule_content_decoded))
             except Exception as e:
                 print(e)
-                return html.Div(['There was an error processing this file.'])
+                #return html.Div(['There was an error processing this file.'])
+                return 'There was an error processing this file.'
 
             #datetime_time_sim = datetime.strptime(time_sim, '%Y-%m-%d %H:%M:%S')
 

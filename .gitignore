@@ -22,3 +22,6 @@ test.py
 
 idf_files/*
 alfalfa/setup.cfg
+*.cfg
+
+cosim-alfalfa/*
