@@ -28,6 +28,7 @@ class CoSimCore:
         
         # Import building model settings
         self.alfalfa_url = building_model_information[SETTING.ALFALFA_URL]
+        self.minio_ip = building_model_information[SETTING.MINIO_IP]
         self.model_path = building_model_information[SETTING.PATH_BUILDING_MODEL]
         self.conditioned_zones = building_model_information[SETTING.CONDITIONED_ZONES]
         self.unconditioned_zones = building_model_information[SETTING.UNCONDITIONED_ZONES]
@@ -90,13 +91,16 @@ class CoSimCore:
         
         if self.debug: print(f"\n=Submitting building model <{self.model_path}> from <{self.model_archive_path}>", end="\n")
         self.model_id = self.alfalfa_client.submit(
-            self.model_archive_path,    # model_path
-            False                       # wait_for_status
+            model_path=self.model_archive_path,    # model_path
+            minio_ip=self.minio_ip,
+            wait_for_status=True                        # wait_for_status
         )
+        """
         self.alfalfa_client.wait(
             self.model_id,  # site_id
             "ready"         # desired_status
         )
+        """
         
         ## This alias is to test bacnet bridge and/or multiple model test
         self.alfalfa_client.set_alias(

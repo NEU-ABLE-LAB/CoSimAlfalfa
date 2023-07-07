@@ -1,11 +1,28 @@
-import io, os, uuid, time
-from datetime import datetime
+import sys
+sys.path.append('cosim/src/')
+
+import io, os, uuid, time, shutil, yaml, socket, datetime
+#from datetime import datetime
 import numpy as np
 import pandas as pd
+import subprocess
 
-from CoSimCore import CoSimCore
-from CoSimDict import DATA, CONTROL, SETTING
-from CoSimUtils import get_record_template, update_record
+# Import docker and docker-compose
+import docker
+import compose
+from compose.cli.main import TopLevelCommand, project_from_options
+from compose.cli import docker_client
+from compose.cli.command import get_project
+from compose.service import ImageType
+
+from cosim.src.CoSimCore import CoSimCore
+from cosim.src.CoSimDict import DATA, CONTROL, SETTING
+from cosim.src.CoSimUtils import get_record_template, update_record
+
+# Import occupant model
+from cosim.src.occupant_model.src.model import OccupantModel
+from cosim.src.thermostat import thermostat
+import socket, time, timeit, sys, socket
 
 # Use dash-extensions instead of dash to use ServerSideOutput: Not store data as web-browser cache, but inside the server (file_system_store)
 from dash_extensions.enrich import DashProxy, Output, Input, State, ServersideOutput, html, dcc, ServersideOutputTransform
@@ -235,7 +252,6 @@ class CoSimGUI:
 
 
         time_start = time.time_ns()
-        """
         # Speed comparison with and without parallelization, before return statement
         # Tested on surface laptop (500 steps, 3 models):
         #  -Without parallelization: 240.1542451 sec
@@ -243,32 +259,40 @@ class CoSimGUI:
         # Tested on surface laptop (100 steps, 3 models):
         #  -Without parallelization: 47.9603716 sec
         #  -With parallelization:  18.2678293 sec
-        # --> decieded to perform without parallelization
-        def update_model_each(cosim_session, steps_to_proceed):
+        def update_model_each(cosim_session: CoSimCore, steps_to_proceed):
             #record_each = dict()
+            output_step = cosim_session.retrieve_outputs()
+            time_sim_input = output_step[DATA.TIME_SIM]
             record_each = get_record_template(name=cosim_session.alias,
                                               time_start=None, 
                                               time_end=None, 
                                               conditioned_zones=cosim_session.conditioned_zones,
                                               unconditioned_zones=cosim_session.unconditioned_zones,
                                               is_initial_record=False, 
-                                              output_step=None)
+                                              output_step=output_step)
             for _ in range(int(np.floor(float(steps_to_proceed)))):
-                time_sim_input = cosim_session.alfalfa_client.get_sim_time(cosim_session.model_id)
                 control_input, control_information = \
                     cosim_session.compute_control(time_sim=time_sim_input,
                                                     control_mode=control_mode,
                                                     setpoints_manual={DATA.HEATING_SETPOINT_NEW: heating_setpoint_new,
-                                                                    DATA.HEATING_SETPOINT_DEADBAND_UP: heating_deadband_up,
-                                                                    DATA.HEATING_SETPOINT_DEADBAND_DOWN: heating_deadband_down,
-                                                                    DATA.COOLING_SETPOINT_NEW: cooling_setpoint_new,
-                                                                    DATA.COOLING_SETPOINT_DEADBAND_UP: cooling_deadband_up,
-                                                                    DATA.COOLING_SETPOINT_DEADBAND_DOWN: cooling_deadband_down},
+                                                                      DATA.HEATING_SETPOINT_DEADBAND_UP: heating_deadband_up,
+                                                                      DATA.HEATING_SETPOINT_DEADBAND_DOWN: heating_deadband_down,
+                                                                      DATA.COOLING_SETPOINT_NEW: cooling_setpoint_new,
+                                                                      DATA.COOLING_SETPOINT_DEADBAND_UP: cooling_deadband_up,
+                                                                      DATA.COOLING_SETPOINT_DEADBAND_DOWN: cooling_deadband_down},
                                                     schedule_info={'contents': schedule_contents,
                                                                     'filename': schedule_filename},
-                                                    record=record_each)
+                                                    output_step=output_step)
                 output_step = cosim_session.proceed_simulation(control_input=control_input,
                                                                control_information=control_information)
+
+                output_step = cosim_session.retrieve_outputs(control_information=control_information)
+                time_sim_input = output_step[DATA.TIME_SIM]
+                update_record(output_step=output_step,
+                              record=record_each,
+                              conditioned_zones=cosim_session.conditioned_zones,
+                              unconditioned_zones=cosim_session.unconditioned_zones)
+
                 update_record(output_step=output_step,
                               record=record_each,
                               conditioned_zones=cosim_session.conditioned_zones,
@@ -309,13 +333,14 @@ class CoSimGUI:
                                                                         DATA.COOLING_SETPOINT_DEADBAND_DOWN: cooling_deadband_down},
                                                       schedule_info={'contents': schedule_contents,
                                                                      'filename': schedule_filename},
-                                                      record=record_current)
+                                                      output_step=)
                     output_step = cosim_session.proceed_simulation(control_input=control_input,
                                                                    control_information=control_information)
                     update_record(output_step=output_step,
                                   record=record_current[cosim_session.alias],
                                   conditioned_zones=cosim_session.conditioned_zones,
                                   unconditioned_zones=cosim_session.unconditioned_zones)
+        """
         
         # Record elapsed time for simulation?
         time_end = time.time_ns()
@@ -708,3 +733,98 @@ class CoSimGUI:
                           Input('=export=', 'n_clicks'),
                           State('-record-', 'data'),
                           prevent_initial_call=True)(self.export_data)
+
+
+
+if __name__ == "__main__":
+    ## Setting parameters
+    debug = True                # set this True to print additional information to the console
+    test_gui_only = False       # if True, create GUI without connecting to Alfalfa for testing
+
+    # Resolve the IP address of another container by its name
+    alfalfa_url = 'http://localhost'
+    minio_ip = None
+
+
+    ## Simulation Time
+    time_start = datetime.datetime(2019, 1, 1, 0, 0, 0)
+    time_end = datetime.datetime(2019, 12, 31, 0, 0, 0)
+    time_step_size = 1
+
+    ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
+    # model_name: location of the building model, under 'idf_files' folder
+    # conditioned_zone_names: list of the names of conditioned zone (Note: not tested with multi-zone case)
+    # unconditioned_zone_names: list of the names of unconditioned zone
+    model_name, conditioned_zones, unconditioned_zones =\
+        'husky', \
+        ['Zone Conditioned', ], \
+        ['Zone Unconditioned Attic', 'Zone Unconditioned Basement']
+
+    ## Create input list
+    list_input = []
+    num_duplicates = 4
+    for _ in range(num_duplicates):
+        # building model and simulation information
+        building_model_information = {
+            SETTING.ALFALFA_URL: alfalfa_url,
+            SETTING.MINIO_IP: minio_ip,
+            SETTING.NAME_BUILDING_MODEL: model_name,
+            SETTING.PATH_BUILDING_MODEL: os.path.join('idf_files', model_name),
+            SETTING.CONDITIONED_ZONES: conditioned_zones,
+            SETTING.UNCONDITIONED_ZONES: unconditioned_zones,
+        }
+        simulation_information = {
+            SETTING.TIME_START: time_start,
+            SETTING.TIME_END: time_end,
+            SETTING.TIME_SCALE_BUILDING_SIMULATION: time_step_size,
+            SETTING.TIME_STEP_SIZE: time_step_size,
+            SETTING.EXTERNAL_CLOCK: True,
+        }
+
+
+        # occupant and thermostat model information
+        occupant_model_information = {
+            SETTING.OCCUPANT_MODEL: OccupantModel,
+            SETTING.NUM_OCCUPANT: 1,
+            SETTING.NUM_HOME: 1,
+            SETTING.DISCOMFORT_THEORY: 'TFT',
+            SETTING.OCCUP_COMFORT_TEMPERATURE: 24.0,
+            SETTING.DISCOMFORT_THEORY_THRESHOLD: {'UL': 50, 'LL': -50},
+            SETTING.TFT_BETA: 1,
+            SETTING.TFT_ALPHA: 0.9,
+            SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: 'cosim/src/occupant_model/input_data/csv_files/',
+                                               SETTING.PATH_MODEL_DIR: 'cosim/src/occupant_model/input_data/model_files/'},
+        }
+        thermostat_model_information = {
+            SETTING.THERMOSTAT_MODEL: thermostat,
+            SETTING.THERMOSTAT_SCHEDULE_TYPE: 'default',
+            SETTING.CURRENT_DATETIME:time_start,
+        }
+
+        list_input.append({SETTING.BUILDING_MODEL_INFORMATION: building_model_information,
+                           SETTING.SIMULATION_INFORMATION: simulation_information,
+                           SETTING.OCCUPANT_MODEL_INFORMATION: occupant_model_information,
+                           SETTING.THERMOSTAT_MODEL_INFORMATION: thermostat_model_information,
+                           })
+
+
+    cosim_sessions = []
+    for index_input, input_each in enumerate(list_input):
+        ## Create CoSimCore and GUI
+        cosim_sessions.append(CoSimCore(alias='Model' + str(index_input+1) + ': ' + input_each[SETTING.BUILDING_MODEL_INFORMATION][SETTING.NAME_BUILDING_MODEL],
+                                        building_model_information=input_each[SETTING.BUILDING_MODEL_INFORMATION],
+                                        simulation_information=input_each[SETTING.SIMULATION_INFORMATION],
+                                        occupant_model_information=input_each[SETTING.OCCUPANT_MODEL_INFORMATION],
+                                        thermostat_model_information=input_each[SETTING.THERMOSTAT_MODEL_INFORMATION],
+                                        test_default_model=False,
+                                        debug=debug))
+
+
+    print(f'=Running GUI mode...\n')
+    ## Create Co-Simulation Framework and Run
+    dash_gui = CoSimGUI(cosim_sessions=cosim_sessions,
+                        test_gui_only=test_gui_only,
+                        test_default_model=False,
+                        debug=debug)
+    dash_gui.run()
+    print("Terminated!")

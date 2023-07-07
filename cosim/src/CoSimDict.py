@@ -2,6 +2,7 @@ class SETTING():
     # Building model information
     BUILDING_MODEL_INFORMATION = 'building_model_information'
     ALFALFA_URL = 'alfalfa_url'
+    MINIO_IP = 'minio_ip'
     NAME_BUILDING_MODEL = 'name_building_model'
     PATH_BUILDING_MODEL = 'path_building_model'
     CONDITIONED_ZONES = 'conditioned_zones'

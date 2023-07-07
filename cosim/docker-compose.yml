@@ -4,8 +4,10 @@ version: '3.3'
 services:
   occupant_model_service:
     build:
-      dockerfile: ./Dockerfile
+      context: ../
+      dockerfile: cosim/Dockerfile
     networks:
       - alfalfa_default
 networks:
   alfalfa_default:
+    external: true

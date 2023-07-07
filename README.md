@@ -2,7 +2,7 @@
 CoSimulation framework using Alfalfa (without BCS)
 
 ## Setup procedure
-1. Clone this repository. Make sure to clone submodule as well (check the existence of the folder `occupant_model`)
+1. Clone this repository. Make sure to clone submodule as well (check if the folder `cosim/src/occupant_model` has its content --> Contact ABLE Lab for the contents of the folder `cosim/src/occupant_model/input_data`)
 2. Setup alfalfa:
    1. Install docker-desktop (https://www.docker.com/products/docker-desktop/)
    2. Create a folder named `alfalfa` inside the repository folder
@@ -13,36 +13,38 @@ CoSimulation framework using Alfalfa (without BCS)
 4. Setup dependencies for co-simulation framework:
    1. Create a conda virtual environment using `environment.yml` file `conda env create --file environment.yml --name environment_name_you_want`
    2. Install any missing packages if needed
-   3. Note: Currently we use Alfalfa 0.5.1 and Alfalfa_Client 0.5.0
+   3. Note: Currently we use Alfalfa 0.5.1 and Alfalfa_Client 0.5.0 (Note: Alfalfa_client is cusotmized version by ABLE Lab)
 
 ## Run procedure
 1. Deploy `Alfalfa` by running `docker-compose up` at the folder `alfalfa` you created
    1. If you notice `alfalfa_worker` is not running as it could not find some files, please check if you changes EOL of the shellp scripts.
    2. If you get a message that there is no network associated with the container, please create a network named `alfalfa_default` by running `docker network create alfalfa_default`
-2. Main script is `CoSimMain.py`.
+2. Main script for GUI version is `CoSimGUI.py`.
    1. If you notice missing package, please install them using `pip`
    2. The script has following variables:
       1. `debug`: If `True`, print additional information in the console
       2. `test_gui_only`: If `True`, run the framework without simulation. It is to test GUI component.
-      3. `test_defalt_model`: If `True`, change the input/output parameters to play with default model provided by Alfalfa. Used when the model name starts with _alfalfa_default_
-      4. `model_name`: Among several building models, the user can specify the building model to be used. Please note that the building models are stored at `idf_files/Alfalfa` folder.
+      4. `model_name`: Among several building models, the user can specify the building model to be used. Please note that the building models are stored at `idf_files` folder.
          1. Note: Some of the building models might not work properly, as we are still testing them.
-      5. `alfalfa_url`: Specifying the location of `Alfalfa`. Currently pointing `localhost` as we did not deploy `Alfalfa` on a cloud location.
+      5. `alfalfa_url`: Specifying the location of `Alfalfa`. For GUI version, pointing `localhost` as it does not deploy `Alfalfa` on a cloud location.
       6. `time_start`: The variable storing the start time of the simulation (is global to ensure that some variables can be initialized without running simulation)
       7. `time_end`: The variable storing the end time of the simulation (is global to ensure that some variables can be initialized without running simulation)
       8. `time_step_size`: The variable controlling the step size (not recommend changing this)
       9. The parameters related to occupant model are followed.
       10. Note: Information is grouped into `building_model_information`, `simulation_information`, and `occupant_model_information`.
    3. After you run `CoSimMain.py`, you can open GUI from the location `http://127.0.0.1:8050` (or via the link provided in the console) using a web browser.
-3. Currently, the components are modularized in the following scripts:
-   1. `CoSimMain.py`: Includes the main script, where a user can change some parameters.
-   2. `CoSimCore.py`: Includes core components of co-simulation, which includes 1) communication with Alfalfa, 2) proceeding simulation, and 3) setpoint control.
-   3. `CoSimGUI.py`: Includes the functions for 1) GUI components and their update and 2) call-back functions governing the operation of GUI.
-   4. `CoSimDict.py`: Includes the dictionary of parameters used across the framework
-   5. `CoSimUtils.py`: Includes functions not related to simulation nor GUI.
+3. Core components of the framework is maintained in `cosim/src` folder:
+   1. `CoSimCore.py`: Includes core components of co-simulation, which includes 1) communication with Alfalfa, 2) proceeding simulation, and 3) setpoint control.
+   2. `CoSimDict.py`: Includes the dictionary of parameters used across the framework
+   3. `CoSimUtils.py`: Includes functions not related to simulation nor GUI.
+   4. `CoSimMain.py`: Main script for the containerized version.
+4. Co-simulation framework can be containerized as a separate docker container or K8s pod. Setup file includes:
+   1. `cosim/Dockerfile`: Dockerfile for containerized version.
+   2. `cosim/docker-compose.yml`: Compose file for containerized version.
+   3. To build an image, the user can modify `CoSimMain.py` to change the target model and parameters, and run `docker-compose build` at the subdirectory `cosim`.
 
 
-## Usage and controller development (description based on the screenshot below)
+## Usage and controller development of GUI version (description based on the screenshot below)
 ![img.png](document/interface_2.png)
 1. The interface includes the following groups of information:
    1. `Model information`: Include the simulation setting
