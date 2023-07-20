@@ -52,8 +52,12 @@ def update_record(output_step, record, conditioned_zones, unconditioned_zones, d
     # Data about HVAC energy usage
     record[DATA.STATUS][DATA.COOLING_COIL_ELECTRICITY_ENERGY].append(output_step[DATA.COOLING_COIL_ELECTRICITY_ENERGY])
     record[DATA.STATUS][DATA.FAN_ELECTRICITY_ENERGY].append(output_step[DATA.FAN_ELECTRICITY_ENERGY])
-    record[DATA.STATUS][DATA.HEATING_COIL_FUEL_ENERGY].append(output_step[DATA.HEATING_COIL_FUEL_ENERGY])
     record[DATA.STATUS][DATA.HEATING_COIL_ELECTRICITY_ENERGY].append(output_step[DATA.HEATING_COIL_ELECTRICITY_ENERGY])
+    if DATA.HEATING_COIL_FUEL_ENERGY in output_step:
+        record[DATA.STATUS][DATA.HEATING_COIL_FUEL_ENERGY].append(output_step[DATA.HEATING_COIL_FUEL_ENERGY])
+    else:
+        record[DATA.STATUS][DATA.HEATING_COIL_FUEL_ENERGY].append(0.0)
+
     return
 
 

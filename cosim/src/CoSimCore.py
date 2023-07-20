@@ -90,10 +90,12 @@ class CoSimCore:
         self.model_archive_path = create_model_archive(self.model_path)  ## Example from Alfalfa as is
         
         if self.debug: print(f"\n=Submitting building model <{self.model_path}> from <{self.model_archive_path}>", end="\n")
+        
+        ## Note: Do not put argument names for alfalfa_client.submit(), as it will raise error for the GUI version
         self.model_id = self.alfalfa_client.submit(
-            model_path=self.model_archive_path,    # model_path
-            minio_ip=self.minio_ip,
-            wait_for_status=True                        # wait_for_status
+            self.model_archive_path,    # model_path
+            self.minio_ip,              # minio_ip
+            True                        # wait_for_status
         )
         """
         self.alfalfa_client.wait(

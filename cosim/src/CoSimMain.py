@@ -159,10 +159,22 @@ if __name__ == "__main__":
     # model_name: location of the building model, under 'idf_files' folder
     # conditioned_zone_names: list of the names of conditioned zone (Note: not tested with multi-zone case)
     # unconditioned_zone_names: list of the names of unconditioned zone
+    """
     model_name, conditioned_zones, unconditioned_zones =\
         'husky', \
         ['Zone Conditioned', ], \
         ['Zone Unconditioned Attic', 'Zone Unconditioned Basement']
+    """
+    model_name, conditioned_zones, unconditioned_zones =\
+        'green_husky', \
+        ['living_1', ], \
+        ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
+    """
+    model_name, conditioned_zones, unconditioned_zones =\
+        'small_green_husky', \
+        ['living_1', ], \
+        ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
+    """
 
     ## Create input list
     list_input = []
