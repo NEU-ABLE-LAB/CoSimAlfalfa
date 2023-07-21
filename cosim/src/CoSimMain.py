@@ -99,8 +99,8 @@ def run_each_session(index_input, input_each, steps_to_proceed):
 if __name__ == "__main__":
     start = timeit.default_timer()
     ## Workplace configuration
-    dir_workspace = os.path.dirname(__file__)
-    name_output_dir = 'output'
+    dir_workspace = os.path.dirname(os.path.dirname(__file__))
+    name_output_dir = 'ip_op/output'
     dir_output = os.path.join(dir_workspace, name_output_dir)    
     dir_output_log_filename = os.path.join(dir_output, "logfile_{}.log".format(datetime.datetime.now().strftime("%Y%m%d_%H%M%S")))
     
@@ -109,12 +109,12 @@ if __name__ == "__main__":
     
     # Resolve the IP address of another container by its name
     web_ip_address = socket.gethostbyname('web')
-    alfalfa_url = 'http://' + web_ip_address
-    minio_ip = socket.gethostbyname('minio')
+    alfalfa_url = 'http://' + web_ip_address + ':80' 
+    # alfalfa_url = 'http://localhost'
 
     try:
         page = requests.get(alfalfa_url, timeout=1)
-        print(f'Connection: ESTABLISHED --> alfalfa_url: {alfalfa_url} | minio_ip: {minio_ip}')
+        print(f'Connection: ESTABLISHED --> alfalfa_url: {alfalfa_url}')
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError):
         print(f'Connection: FAILED')
 
@@ -182,9 +182,8 @@ if __name__ == "__main__":
         # building model and simulation information
         building_model_information = {
             SETTING.ALFALFA_URL: alfalfa_url,
-            SETTING.MINIO_IP: minio_ip,
             SETTING.NAME_BUILDING_MODEL: model_name,
-            SETTING.PATH_BUILDING_MODEL: os.path.join('idf_files', model_name),
+            SETTING.PATH_BUILDING_MODEL: os.path.join('ip_op/idf_files', model_name),
             SETTING.CONDITIONED_ZONES: conditioned_zones,
             SETTING.UNCONDITIONED_ZONES: unconditioned_zones,
         }
@@ -205,8 +204,8 @@ if __name__ == "__main__":
             SETTING.DISCOMFORT_THEORY_THRESHOLD: {'UL': 50, 'LL': -50},
             SETTING.TFT_BETA: 1,
             SETTING.TFT_ALPHA: 0.6,
-            SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: 'occupant_model/input_data/csv_files/',
-                                               SETTING.PATH_MODEL_DIR: 'occupant_model/input_data/model_files/'},
+            SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: 'ip_op/occ_model/csv_files/',
+                                               SETTING.PATH_MODEL_DIR: 'ip_op/occ_model/model_files/'},
         }
         thermostat_model_information = {
             SETTING.THERMOSTAT_MODEL: thermostat,

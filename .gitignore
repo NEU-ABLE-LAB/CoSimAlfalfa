@@ -25,3 +25,4 @@ alfalfa/setup.cfg
 *.cfg
 
 cosim-alfalfa/*
+cosim/ip_op/

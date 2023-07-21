@@ -743,8 +743,6 @@ if __name__ == "__main__":
 
     # Resolve the IP address of another container by its name
     alfalfa_url = 'http://localhost'
-    minio_ip = None
-
 
     ## Simulation Time
     time_start = datetime.datetime(2019, 1, 1, 0, 0, 0)
@@ -779,7 +777,6 @@ if __name__ == "__main__":
         # building model and simulation information
         building_model_information = {
             SETTING.ALFALFA_URL: alfalfa_url,
-            SETTING.MINIO_IP: minio_ip,
             SETTING.NAME_BUILDING_MODEL: model_name,
             SETTING.PATH_BUILDING_MODEL: os.path.join('idf_files', model_name),
             SETTING.CONDITIONED_ZONES: conditioned_zones,
