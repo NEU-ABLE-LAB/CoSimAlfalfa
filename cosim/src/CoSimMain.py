@@ -78,7 +78,7 @@ def run_each_session(index_input, input_each, steps_to_proceed):
     # Export the simulation result
     print(f'\n=Exporting results (alias: {cosim_session.alias})...')
     uuid_prefix = str(uuid.uuid4())
-    model_prefix = cosim_session.alias.split(':')[0]
+    # model_prefix = cosim_session.alias.split(':')[0]
     model_name = record_each[DATA.SETTING]['model_name'][0].replace(": ","_")
     alpha_value = "a" + str(occupant_model_information[SETTING.TFT_ALPHA]).replace(".","")+ "_"
     dir_output_file = os.path.join(dir_output, model_name + '_' + uuid_prefix + '_' +  alpha_value +'.gzip')
