@@ -14,6 +14,10 @@ from CoSimUtils import get_record_template, update_record
 from occupant_model.src.model import OccupantModel
 from thermostat import thermostat
 import requests, socket, time, timeit, sys, socket
+
+# Import eppy to read idf's deadband settings
+from eppy.modeleditor import IDF
+ 
 time.sleep(2)
 
 class Logger(object):
@@ -176,6 +180,13 @@ if __name__ == "__main__":
         ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
     """
 
+    # Read idf file for thermostat deadband
+    iddfile = os.path.join('ip_op','idf_files', model_name,'V9-6-0-Energy+.idd')
+    fname1 = os.path.join('ip_op','idf_files', model_name,'GreenBuiltHeatpumpV96.idf')
+    IDF.setiddname(iddfile)
+    idf1 = IDF(fname1)
+    idf_db = idf1.idfobjects['ZoneControl:Thermostat'][0].Temperature_Difference_Between_Cutout_And_Setpoint
+
     ## Create input list
     list_input = []
     for _ in range(num_models):
@@ -184,7 +195,7 @@ if __name__ == "__main__":
             SETTING.ALFALFA_URL: alfalfa_url,
             SETTING.MINIO_IP: minio_ip,
             SETTING.NAME_BUILDING_MODEL: model_name,
-            SETTING.PATH_BUILDING_MODEL: os.path.join('idf_files', model_name),
+            SETTING.PATH_BUILDING_MODEL: os.path.join('ip_op', 'idf_files', model_name),
             SETTING.CONDITIONED_ZONES: conditioned_zones,
             SETTING.UNCONDITIONED_ZONES: unconditioned_zones,
         }
@@ -205,13 +216,14 @@ if __name__ == "__main__":
             SETTING.DISCOMFORT_THEORY_THRESHOLD: {'UL': 50, 'LL': -50},
             SETTING.TFT_BETA: 1,
             SETTING.TFT_ALPHA: 0.6,
-            SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: 'occupant_model/input_data/csv_files/',
-                                               SETTING.PATH_MODEL_DIR: 'occupant_model/input_data/model_files/'},
+            SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: os.path.join('ip_op','occ_model','csv_files'),
+                                               SETTING.PATH_MODEL_DIR: os.path.join('ip_op','occ_model','model_files')},
         }
         thermostat_model_information = {
             SETTING.THERMOSTAT_MODEL: thermostat,
             SETTING.THERMOSTAT_SCHEDULE_TYPE: 'default',
             SETTING.CURRENT_DATETIME:time_start,
+            SETTING.IDF_DB: idf_db
         }
 
         list_input.append({SETTING.BUILDING_MODEL_INFORMATION: building_model_information,

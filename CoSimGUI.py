@@ -1,20 +1,11 @@
 import sys
 sys.path.append('cosim/src/')
 
-import io, os, uuid, time, shutil, yaml, socket, datetime
-#from datetime import datetime
+import io, os, time, datetime
 import numpy as np
 import pandas as pd
-import subprocess
 
 # Import docker and docker-compose
-import docker
-import compose
-from compose.cli.main import TopLevelCommand, project_from_options
-from compose.cli import docker_client
-from compose.cli.command import get_project
-from compose.service import ImageType
-
 from cosim.src.CoSimCore import CoSimCore
 from cosim.src.CoSimDict import DATA, CONTROL, SETTING
 from cosim.src.CoSimUtils import get_record_template, update_record
@@ -22,7 +13,7 @@ from cosim.src.CoSimUtils import get_record_template, update_record
 # Import occupant model
 from cosim.src.occupant_model.src.model import OccupantModel
 from cosim.src.thermostat import thermostat
-import socket, time, timeit, sys, socket
+import time, sys
 
 # Use dash-extensions instead of dash to use ServerSideOutput: Not store data as web-browser cache, but inside the server (file_system_store)
 from dash_extensions.enrich import DashProxy, Output, Input, State, ServersideOutput, html, dcc, ServersideOutputTransform
@@ -260,7 +251,6 @@ class CoSimGUI:
         #  -Without parallelization: 47.9603716 sec
         #  -With parallelization:  18.2678293 sec
         def update_model_each(cosim_session: CoSimCore, steps_to_proceed):
-            #record_each = dict()
             output_step = cosim_session.retrieve_outputs()
             time_sim_input = output_step[DATA.TIME_SIM]
             record_each = get_record_template(name=cosim_session.alias,
@@ -281,7 +271,7 @@ class CoSimGUI:
                                                                       DATA.COOLING_SETPOINT_DEADBAND_UP: cooling_deadband_up,
                                                                       DATA.COOLING_SETPOINT_DEADBAND_DOWN: cooling_deadband_down},
                                                     schedule_info={'contents': schedule_contents,
-                                                                    'filename': schedule_filename},
+                                                                   'filename': schedule_filename},
                                                     output_step=output_step)
                 output_step = cosim_session.proceed_simulation(control_input=control_input,
                                                                control_information=control_information)
@@ -307,40 +297,6 @@ class CoSimGUI:
         record_current = dict()
         for alias, record_each in record_aggregated:
             record_current[alias] = record_each.copy()
-        """
-        # Not parallelized version of simulation running
-        record_current = dict()
-        for cosim_session in self.cosim_sessions:
-            if cosim_session.alias in model_to_control:
-                record_current[cosim_session.alias] = get_record_template(name=cosim_session.alias,
-                                                                          time_start=None, 
-                                                                          time_end=None, 
-                                                                          conditioned_zones=cosim_session.conditioned_zones,
-                                                                          unconditioned_zones=cosim_session.unconditioned_zones,
-                                                                          is_initial_record=False, 
-                                                                          output_step=None)
-
-                for _ in range(int(np.floor(float(steps_to_proceed)))):
-                    time_sim_input = cosim_session.alfalfa_client.get_sim_time(cosim_session.model_id)
-                    control_input, control_information = \
-                        cosim_session.compute_control(time_sim=time_sim_input,
-                                                      control_mode=control_mode,
-                                                      setpoints_manual={DATA.HEATING_SETPOINT_NEW: heating_setpoint_new,
-                                                                        DATA.HEATING_SETPOINT_DEADBAND_UP: heating_deadband_up,
-                                                                        DATA.HEATING_SETPOINT_DEADBAND_DOWN: heating_deadband_down,
-                                                                        DATA.COOLING_SETPOINT_NEW: cooling_setpoint_new,
-                                                                        DATA.COOLING_SETPOINT_DEADBAND_UP: cooling_deadband_up,
-                                                                        DATA.COOLING_SETPOINT_DEADBAND_DOWN: cooling_deadband_down},
-                                                      schedule_info={'contents': schedule_contents,
-                                                                     'filename': schedule_filename},
-                                                      output_step=)
-                    output_step = cosim_session.proceed_simulation(control_input=control_input,
-                                                                   control_information=control_information)
-                    update_record(output_step=output_step,
-                                  record=record_current[cosim_session.alias],
-                                  conditioned_zones=cosim_session.conditioned_zones,
-                                  unconditioned_zones=cosim_session.unconditioned_zones)
-        """
         
         # Record elapsed time for simulation?
         time_end = time.time_ns()

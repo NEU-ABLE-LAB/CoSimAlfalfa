@@ -12,7 +12,7 @@ class thermostat():
     This class contains the thermostat object that is used to control the heating and cooling setpoints of the building model.
     '''
     # Define class methods
-    def __init__(self,units='c', schedule_type:str = 'default', current_datetime:datetime = datetime.datetime.now()) -> None:
+    def __init__(self,units='c', schedule_type:str = 'default', current_datetime:datetime = datetime.datetime.now(), db:float = 0.0) -> None:
         '''
         This function initializes the thermostat object.
         '''
@@ -26,12 +26,22 @@ class thermostat():
         self.next_schedule_datetime = None
         self.first_run = True
         self.units = units.upper()
+        self.db = db
     
     def C_to_F(self,T):
         return (T * 9/5) + 32
     
     def F_to_C(self,T):
         return (T - 32) * 5/9
+
+    def check_stp_db(self):
+        '''
+        This function checks to make sure that the heating and cooling setpoints are valid.
+        '''
+        if self.tstp_cool - self.db > self.tstp_heat:
+            pass
+        else:
+            raise ValueError(f"stp_cool({self.tstp_cool}) - db({self.db}) !> stp_heat({self.tstp_heat})")
     
     def get_tstat_schedule_params(self, current_datetime:datetime):
         '''
@@ -57,6 +67,7 @@ class thermostat():
         '''
         This function allows the user to manually override the thermostat.
         '''
+        self.check_stp_db()
         self.mode = 'manual'
         self.tstp_heat = tstp_heat
         self.tstp_cool = tstp_cool
