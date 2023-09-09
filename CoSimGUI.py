@@ -23,6 +23,9 @@ from plotly.subplots import make_subplots
 # Import parallelization
 from joblib import Parallel, delayed
 
+# Import eppy to read idf's deadband settings
+from eppy.modeleditor import IDF
+
 
 def id(name):
     return '-' + name + '-'
@@ -728,6 +731,13 @@ if __name__ == "__main__":
         ['living_1', ], \
         ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
 
+    # Read idf file for thermostat deadband
+    iddfile = os.path.join('cosim', 'ip_op','idf_files', model_name,'V9-6-0-Energy+.idd')
+    fname1 = os.path.join('cosim', 'ip_op','idf_files', model_name,'GreenBuiltHeatpumpV96.idf')
+    IDF.setiddname(iddfile)
+    idf1 = IDF(fname1)
+    idf_db = idf1.idfobjects['ZoneControl:Thermostat'][0].Temperature_Difference_Between_Cutout_And_Setpoint
+
     ## Create input list
     list_input = []
     num_duplicates = 1
@@ -736,7 +746,7 @@ if __name__ == "__main__":
         building_model_information = {
             SETTING.ALFALFA_URL: alfalfa_url,
             SETTING.NAME_BUILDING_MODEL: model_name,
-            SETTING.PATH_BUILDING_MODEL: os.path.join('cosim', 'idf_files', model_name),
+            SETTING.PATH_BUILDING_MODEL: os.path.join('cosim', 'ip_op', 'idf_files', model_name),
             SETTING.CONDITIONED_ZONES: conditioned_zones,
             SETTING.UNCONDITIONED_ZONES: unconditioned_zones,
         }
@@ -758,14 +768,15 @@ if __name__ == "__main__":
             SETTING.OCCUP_COMFORT_TEMPERATURE: 24.0,
             SETTING.DISCOMFORT_THEORY_THRESHOLD: {'UL': 50, 'LL': -50},
             SETTING.TFT_BETA: 1,
-            SETTING.TFT_ALPHA: 0.9,
-            SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: 'cosim/src/occupant_model/input_data/csv_files/',
-                                               SETTING.PATH_MODEL_DIR: 'cosim/src/occupant_model/input_data/model_files/'},
+            SETTING.TFT_ALPHA: 0.6,
+            SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: os.path.join('cosim', 'ip_op','occ_model','csv_files'),
+                                               SETTING.PATH_MODEL_DIR: os.path.join('cosim', 'ip_op','occ_model','model_files')},
         }
         thermostat_model_information = {
             SETTING.THERMOSTAT_MODEL: thermostat,
             SETTING.THERMOSTAT_SCHEDULE_TYPE: 'default',
             SETTING.CURRENT_DATETIME:time_start,
+            SETTING.IDF_DB: idf_db
         }
 
         list_input.append({SETTING.BUILDING_MODEL_INFORMATION: building_model_information,

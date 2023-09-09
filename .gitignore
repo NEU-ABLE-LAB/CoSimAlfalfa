@@ -20,8 +20,6 @@ output/
 *.csv
 test.py
 
-idf_files/*
-cosim/idf_files/*
 alfalfa/setup.cfg
 *.cfg
 

@@ -20,9 +20,6 @@ from eppy.modeleditor import IDF
  
 time.sleep(2)
 
-# Import eppy to read idf's deadband settings
-from eppy.modeleditor import IDF
-
 class Logger(object):
     def __init__(self, filename="Default.log"):
         self.terminal = sys.stdout
@@ -41,12 +38,12 @@ def run_each_session(index_input, input_each, steps_to_proceed):
     # Initialization of CoSimCore
     print(f'=Initializing cosim-session')
     cosim_session = CoSimCore(alias='Model' + str(index_input+1) + ': ' + input_each[SETTING.BUILDING_MODEL_INFORMATION][SETTING.NAME_BUILDING_MODEL],
-                                building_model_information=input_each[SETTING.BUILDING_MODEL_INFORMATION],
-                                simulation_information=input_each[SETTING.SIMULATION_INFORMATION],
-                                occupant_model_information=input_each[SETTING.OCCUPANT_MODEL_INFORMATION],
-                                thermostat_model_information=input_each[SETTING.THERMOSTAT_MODEL_INFORMATION],
-                                test_default_model=False,
-                                debug=debug)
+                              building_model_information=input_each[SETTING.BUILDING_MODEL_INFORMATION],
+                              simulation_information=input_each[SETTING.SIMULATION_INFORMATION],
+                              occupant_model_information=input_each[SETTING.OCCUPANT_MODEL_INFORMATION],
+                              thermostat_model_information=input_each[SETTING.THERMOSTAT_MODEL_INFORMATION],
+                              test_default_model=False,
+                              debug=debug)
     cosim_session.initialize()
     print(f'\t--> Complete (alias: {cosim_session.alias}\n')
     
@@ -183,13 +180,6 @@ if __name__ == "__main__":
     #     ['living_1', ], \
     #     ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
     # """
-
-    # Read idf file for thermostat deadband
-    iddfile = os.path.join('ip_op','idf_files', model_name,'V9-6-0-Energy+.idd')
-    fname1 = os.path.join('ip_op','idf_files', model_name,'GreenBuiltHeatpumpV96.idf')
-    IDF.setiddname(iddfile)
-    idf1 = IDF(fname1)
-    idf_db = idf1.idfobjects['ZoneControl:Thermostat'][0].Temperature_Difference_Between_Cutout_And_Setpoint
 
     # Read idf file for thermostat deadband
     iddfile = os.path.join('ip_op','idf_files', model_name,'V9-6-0-Energy+.idd')
