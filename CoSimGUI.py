@@ -752,7 +752,7 @@ if __name__ == "__main__":
     time_step_size = 1
 
     ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
-    # model_name: location of the building model, under 'idf_files' folder
+    # model_name: location of the building model, under 'cosim/idf_files' folder
     # conditioned_zone_names: list of the names of conditioned zone (Note: not tested with multi-zone case)
     # unconditioned_zone_names: list of the names of unconditioned zone
     """
@@ -760,17 +760,19 @@ if __name__ == "__main__":
         'husky', \
         ['Zone Conditioned', ], \
         ['Zone Unconditioned Attic', 'Zone Unconditioned Basement']
-    """
     model_name, conditioned_zones, unconditioned_zones =\
         'green_husky', \
         ['living_1', ], \
         ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
-    """
     model_name, conditioned_zones, unconditioned_zones =\
         'small_green_husky', \
         ['living_1', ], \
         ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
     """
+    model_name, conditioned_zones, unconditioned_zones =\
+        'green_husky_v96', \
+        ['living_1', ], \
+        ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
 
     ## Create input list
     list_input = []
@@ -781,7 +783,7 @@ if __name__ == "__main__":
             SETTING.ALFALFA_URL: alfalfa_url,
             SETTING.MINIO_IP: minio_ip,
             SETTING.NAME_BUILDING_MODEL: model_name,
-            SETTING.PATH_BUILDING_MODEL: os.path.join('idf_files', model_name),
+            SETTING.PATH_BUILDING_MODEL: os.path.join('cosim', 'idf_files', model_name),
             SETTING.CONDITIONED_ZONES: conditioned_zones,
             SETTING.UNCONDITIONED_ZONES: unconditioned_zones,
         }
