@@ -28,7 +28,6 @@ class CoSimCore:
         
         # Import building model settings
         self.alfalfa_url = building_model_information[SETTING.ALFALFA_URL]
-        self.minio_ip = building_model_information[SETTING.MINIO_IP]
         self.model_path = building_model_information[SETTING.PATH_BUILDING_MODEL]
         self.conditioned_zones = building_model_information[SETTING.CONDITIONED_ZONES]
         self.unconditioned_zones = building_model_information[SETTING.UNCONDITIONED_ZONES]
@@ -51,15 +50,17 @@ class CoSimCore:
         self.o_TFT_alpha = occupant_model_information[SETTING.TFT_ALPHA]
         self.o_TFT_beta = occupant_model_information[SETTING.TFT_BETA]
         self.o_occupant_model_data_paths = occupant_model_information[SETTING.PATH_OCCUPANT_MODEL_DATA]
+        self.o_tstat_db = thermostat_model_information[SETTING.IDF_DB]
 
         # Import thermostat model settings
         self.thermostat_model = thermostat_model_information[SETTING.THERMOSTAT_MODEL]
         self.thermostat_schedule_type = thermostat_model_information[SETTING.THERMOSTAT_SCHEDULE_TYPE]
         self.current_datetime = thermostat_model_information[SETTING.CURRENT_DATETIME]
+        self.idf_db = thermostat_model_information[SETTING.IDF_DB]
 
     def initialize(self):
         self.thermostat_model = self.thermostat_model(schedule_type=self.thermostat_schedule_type,
-                                                      current_datetime=self.current_datetime)
+                                                      current_datetime=self.current_datetime, db=self.idf_db)
         init_data_dir = pathlib.Path(self.o_occupant_model_data_paths[SETTING.PATH_CSV_DIR]).resolve()
         models_dir = pathlib.Path(self.o_occupant_model_data_paths[SETTING.PATH_MODEL_DIR]).resolve()
         data_files = list(init_data_dir.iterdir())
@@ -81,7 +82,8 @@ class CoSimCore:
                                                       threshold=self.o_discomfort_theory_threshold,
                                                       TFT_alpha=self.o_TFT_alpha,
                                                       TFT_beta=self.o_TFT_beta,
-                                                      start_datetime=self.time_start)
+                                                      start_datetime=self.time_start,
+                                                      tstat_db = self.o_tstat_db)
 
         if self.debug: print(f"\n==Initializing alfalfa client, connecting to the Alfalfa at: {self.alfalfa_url}")
         self.alfalfa_client = ac.AlfalfaClient(host=self.alfalfa_url)
@@ -94,7 +96,6 @@ class CoSimCore:
         ## Note: Do not put argument names for alfalfa_client.submit(), as it will raise error for the GUI version
         self.model_id = self.alfalfa_client.submit(
             self.model_archive_path,    # model_path
-            self.minio_ip,              # minio_ip
             True                        # wait_for_status
         )
         """

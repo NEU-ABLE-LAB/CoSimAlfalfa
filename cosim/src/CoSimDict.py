@@ -2,7 +2,6 @@ class SETTING():
     # Building model information
     BUILDING_MODEL_INFORMATION = 'building_model_information'
     ALFALFA_URL = 'alfalfa_url'
-    MINIO_IP = 'minio_ip'
     NAME_BUILDING_MODEL = 'name_building_model'
     PATH_BUILDING_MODEL = 'path_building_model'
     CONDITIONED_ZONES = 'conditioned_zones'
@@ -36,6 +35,7 @@ class SETTING():
     THERMOSTAT_MODEL = 'thermostat'
     THERMOSTAT_SCHEDULE_TYPE = 'schedule_type'
     CURRENT_DATETIME = 'current_datetime'
+    IDF_DB = ' idf_db'
 
 class DATA:
     ## Settings
