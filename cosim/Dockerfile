@@ -11,8 +11,10 @@ WORKDIR /cosim
 
 RUN mkdir -p /cosim/ip_op
 
-COPY ./requirements_light.txt /cosim/requirements_light.txt
-RUN pip install -r /cosim/requirements_light.txt
+# COPY ./requirements_light.txt /cosim/requirements_light.txt
+# RUN pip install -r /cosim/requirements_light.txt
+COPY ./requirements_1.txt /cosim/requirements_1.txt
+RUN pip install -r /cosim/requirements_1.txt
 
 # Copy submodule `occupant_model`, and upgrade it if necessary
 # Note: The submodule should be already cloned before building this docker image
