@@ -28,7 +28,6 @@ class CoSimCore:
         
         # Import building model settings
         self.alfalfa_url = building_model_information[SETTING.ALFALFA_URL]
-        self.minio_ip = building_model_information[SETTING.MINIO_IP]
         self.model_path = building_model_information[SETTING.PATH_BUILDING_MODEL]
         self.conditioned_zones = building_model_information[SETTING.CONDITIONED_ZONES]
         self.unconditioned_zones = building_model_information[SETTING.UNCONDITIONED_ZONES]
@@ -98,7 +97,6 @@ class CoSimCore:
         ## Note: Do not put argument names for alfalfa_client.submit(), as it will raise error for the GUI version
         self.model_id = self.alfalfa_client.submit(
             self.model_archive_path,    # model_path
-            self.minio_ip,              # minio_ip
             True                        # wait_for_status
         )
         """

@@ -43,6 +43,15 @@ class thermostat():
         else:
             raise ValueError(f"stp_cool({self.tstp_cool}) - db({self.db}) !> stp_heat({self.tstp_heat})")
     
+    def check_stp_db(self):
+        '''
+        This function checks to make sure that the heating and cooling setpoints are valid.
+        '''
+        if self.tstp_cool - self.db > self.tstp_heat:
+            pass
+        else:
+            raise ValueError(f"stp_cool({self.tstp_cool}) - db({self.db}) !> stp_heat({self.tstp_heat})")
+    
     def get_tstat_schedule_params(self, current_datetime:datetime):
         '''
         This function returns the heating and cooling setpoints for the thermostat for the current time.
@@ -99,6 +108,4 @@ class thermostat():
             if change_schedule:
                 self.mode, self.schedule, self.tstp_cool, self.tstp_heat = self.get_tstat_schedule_params(current_datetime)
         return self.mode, self.schedule, self.tstp_cool, self.tstp_heat
-            
-            
-
+    

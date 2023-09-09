@@ -20,6 +20,9 @@ from eppy.modeleditor import IDF
  
 time.sleep(2)
 
+# Import eppy to read idf's deadband settings
+from eppy.modeleditor import IDF
+
 class Logger(object):
     def __init__(self, filename="Default.log"):
         self.terminal = sys.stdout
@@ -82,7 +85,7 @@ def run_each_session(index_input, input_each, steps_to_proceed):
     # Export the simulation result
     print(f'\n=Exporting results (alias: {cosim_session.alias})...')
     uuid_prefix = str(uuid.uuid4())
-    model_prefix = cosim_session.alias.split(':')[0]
+    # model_prefix = cosim_session.alias.split(':')[0]
     model_name = record_each[DATA.SETTING]['model_name'][0].replace(": ","_")
     alpha_value = "a" + str(occupant_model_information[SETTING.TFT_ALPHA]).replace(".","")+ "_"
     dir_output_file = os.path.join(dir_output, model_name + '_' + uuid_prefix + '_' +  alpha_value +'.gzip')
@@ -103,8 +106,8 @@ def run_each_session(index_input, input_each, steps_to_proceed):
 if __name__ == "__main__":
     start = timeit.default_timer()
     ## Workplace configuration
-    dir_workspace = os.path.dirname(__file__)
-    name_output_dir = 'output'
+    dir_workspace = os.path.dirname(os.path.dirname(__file__))
+    name_output_dir = 'ip_op/output'
     dir_output = os.path.join(dir_workspace, name_output_dir)    
     dir_output_log_filename = os.path.join(dir_output, "logfile_{}.log".format(datetime.datetime.now().strftime("%Y%m%d_%H%M%S")))
     
@@ -113,12 +116,12 @@ if __name__ == "__main__":
     
     # Resolve the IP address of another container by its name
     web_ip_address = socket.gethostbyname('web')
-    alfalfa_url = 'http://' + web_ip_address
-    minio_ip = socket.gethostbyname('minio')
+    alfalfa_url = 'http://' + web_ip_address + ':80' 
+    # alfalfa_url = 'http://localhost'
 
     try:
         page = requests.get(alfalfa_url, timeout=1)
-        print(f'Connection: ESTABLISHED --> alfalfa_url: {alfalfa_url} | minio_ip: {minio_ip}')
+        print(f'Connection: ESTABLISHED --> alfalfa_url: {alfalfa_url}')
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError):
         print(f'Connection: FAILED')
 
@@ -127,9 +130,9 @@ if __name__ == "__main__":
     time_start = datetime.datetime(2019, 1, 1, 0, 0, 0)
     time_end = datetime.datetime(2030, 1, 1, 0, 0, 0)
     time_step_size = 1
-    steps_to_run = 60       # 1 hour for short test
+    # steps_to_run = 60       # 1 hour for short test
     #steps_to_run = 1440
-    # steps_to_run = 1440 * 365 * 1    # 1440 = 1 day
+    steps_to_run = 1440 * 365 * 1    # 1440 = 1 day
     
     # Choose one of the control mode
     current_control_mode = CONTROL.SCHEDULE_AND_OCCUPANT_MODEL
@@ -155,30 +158,38 @@ if __name__ == "__main__":
     # 2 alfalfa_worker's will be spawned, where each worker can run a single model
     # In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
     # The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
-    num_models = 4 # Total number of tasks to be done
-    num_parallel_process = 2 # Tasks to be done simultaneously
+    num_models = 30 # Total number of tasks to be done
+    num_parallel_process = 10 # Tasks to be done simultaneously
 
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
     ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
     # model_name: location of the building model, under 'idf_files' folder
     # conditioned_zone_names: list of the names of conditioned zone (Note: not tested with multi-zone case)
     # unconditioned_zone_names: list of the names of unconditioned zone
-    """
-    model_name, conditioned_zones, unconditioned_zones =\
+    
+    '''model_name, conditioned_zones, unconditioned_zones =\
         'husky', \
         ['Zone Conditioned', ], \
-        ['Zone Unconditioned Attic', 'Zone Unconditioned Basement']
-    """
+        ['Zone Unconditioned Attic', 'Zone Unconditioned Basement']'
+        '''
+    
     model_name, conditioned_zones, unconditioned_zones =\
         'green_husky', \
         ['living_1', ], \
         ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
-    """
-    model_name, conditioned_zones, unconditioned_zones =\
-        'small_green_husky', \
-        ['living_1', ], \
-        ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
-    """
+    # """
+    # model_name, conditioned_zones, unconditioned_zones =\
+    #     'small_green_husky', \
+    #     ['living_1', ], \
+    #     ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
+    # """
+
+    # Read idf file for thermostat deadband
+    iddfile = os.path.join('ip_op','idf_files', model_name,'V9-6-0-Energy+.idd')
+    fname1 = os.path.join('ip_op','idf_files', model_name,'GreenBuiltHeatpumpV96.idf')
+    IDF.setiddname(iddfile)
+    idf1 = IDF(fname1)
+    idf_db = idf1.idfobjects['ZoneControl:Thermostat'][0].Temperature_Difference_Between_Cutout_And_Setpoint
 
     # Read idf file for thermostat deadband
     iddfile = os.path.join('ip_op','idf_files', model_name,'V9-6-0-Energy+.idd')
@@ -193,7 +204,6 @@ if __name__ == "__main__":
         # building model and simulation information
         building_model_information = {
             SETTING.ALFALFA_URL: alfalfa_url,
-            SETTING.MINIO_IP: minio_ip,
             SETTING.NAME_BUILDING_MODEL: model_name,
             SETTING.PATH_BUILDING_MODEL: os.path.join('ip_op', 'idf_files', model_name),
             SETTING.CONDITIONED_ZONES: conditioned_zones,
