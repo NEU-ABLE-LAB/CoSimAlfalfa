@@ -740,7 +740,7 @@ if __name__ == "__main__":
 
     ## Create input list
     list_input = []
-    num_duplicates = 1
+    num_duplicates = 4
     for _ in range(num_duplicates):
         # building model and simulation information
         building_model_information = {
