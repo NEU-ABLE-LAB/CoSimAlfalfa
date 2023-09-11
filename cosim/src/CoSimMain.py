@@ -141,9 +141,9 @@ if __name__ == "__main__":
     time_start = datetime.datetime(2019, 1, 1, 0, 0, 0)
     time_end = datetime.datetime(2030, 1, 1, 0, 0, 0)
     time_step_size = 1
-    steps_to_run = 60       # 1 hour for short test
+    #steps_to_run = 60       # 1 hour for short test
     #steps_to_run = 1440
-    #steps_to_run = 1440 * 365 * 1    # 1440 = 1 day
+    steps_to_run = 1440 * 365 * 1    # 1440 = 1 day
     
     # Choose one of the control mode
     current_control_mode = CONTROL.SCHEDULE_AND_OCCUPANT_MODEL
@@ -169,8 +169,8 @@ if __name__ == "__main__":
     # 2 alfalfa_worker's will be spawned, where each worker can run a single model
     # In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
     # The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
-    num_models = 4 # Total number of tasks to be done
-    num_parallel_process = 2 # Tasks to be done simultaneously
+    num_models = 30 # Total number of tasks to be done
+    num_parallel_process = 10 # Tasks to be done simultaneously
 
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
     ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
