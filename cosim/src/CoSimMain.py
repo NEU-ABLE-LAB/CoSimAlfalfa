@@ -127,7 +127,7 @@ if __name__ == "__main__":
     time_end = datetime.datetime(2030, 1, 1, 0, 0, 0)
     time_step_size = 1
     # steps_to_run = 60       # 1 hour for short test
-    # steps_to_run = 1440
+    #steps_to_run = 1440
     steps_to_run = 1440 * 365 * 1    # 1440 = 1 day
     
     # Choose one of the control mode
@@ -154,8 +154,8 @@ if __name__ == "__main__":
     # 2 alfalfa_worker's will be spawned, where each worker can run a single model
     # In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
     # The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
-    num_models = 10 # Total number of tasks to be done
-    num_parallel_process = 5 # Tasks to be done simultaneously
+    num_models = 30 # Total number of tasks to be done
+    num_parallel_process = 10 # Tasks to be done simultaneously
 
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
     ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
@@ -181,15 +181,30 @@ if __name__ == "__main__":
     # """
 
     # Read idf file for thermostat deadband
-    iddfile = os.path.join('ip_op','idf_files', model_name,'V23-1-0-Energy+.idd')
+    iddfile = os.path.join('ip_op','idf_files', model_name,'V9-6-0-Energy+.idd')
     fname1 = os.path.join('ip_op','idf_files', model_name,'GreenBuiltHeatpumpV96.idf')
     IDF.setiddname(iddfile)
     idf1 = IDF(fname1)
     idf_db = idf1.idfobjects['ZoneControl:Thermostat'][0].Temperature_Difference_Between_Cutout_And_Setpoint
 
+    # Initialize the name of experiments to be performed
+    exps = ['Baseline: NREL constant', 'Benchmark: Simple Precooling', 'Benchmark: Adv Precooling']
+    exp_list = ['Exp_' + str(i) for i in range(1,145)]
+    exps.extend(exp_list)
+
     ## Create input list
     list_input = []
-    for _ in range(num_models):
+    num_models = 13
+    idx_exp = 0
+    models_assigned = {}
+
+    for idx_model in range(num_models):
+        if exps[idx_exp] != 'exp_142':
+            if idx_exp % 12 == 0:
+                exps_2_run = exps[idx_exp:idx_exp+12]
+        else:
+            exps_2_run = exps[idx_exp:]
+
         # building model and simulation information
         building_model_information = {
             SETTING.ALFALFA_URL: alfalfa_url,
@@ -222,7 +237,9 @@ if __name__ == "__main__":
             SETTING.THERMOSTAT_MODEL: thermostat,
             SETTING.THERMOSTAT_SCHEDULE_TYPE: 'default',
             SETTING.CURRENT_DATETIME:time_start,
-            SETTING.IDF_DB: idf_db
+            SETTING.IDF_DB: idf_db,
+            SETTING.EXPERIMENTS: exps_2_run,
+            SETTING.PATH_EXP_SCHEDULE:os.path.join('ip_op','tstat_exp','exps.xlsx'),
         }
 
         list_input.append({SETTING.BUILDING_MODEL_INFORMATION: building_model_information,
@@ -230,8 +247,7 @@ if __name__ == "__main__":
                            SETTING.OCCUPANT_MODEL_INFORMATION: occupant_model_information,
                            SETTING.THERMOSTAT_MODEL_INFORMATION: thermostat_model_information,
                            })
-    
-
+        idx_exp += 12
     if num_parallel_process > 1:
         Parallel(n_jobs=num_parallel_process)\
                 (delayed(run_each_session)\

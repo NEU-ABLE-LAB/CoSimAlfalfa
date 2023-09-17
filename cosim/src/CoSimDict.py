@@ -36,6 +36,8 @@ class SETTING():
     THERMOSTAT_SCHEDULE_TYPE = 'schedule_type'
     CURRENT_DATETIME = 'current_datetime'
     IDF_DB = ' idf_db'
+    EXPERIMENTS = 'experiments'
+    PATH_EXP_SCHEDULE = 'path_exp_schedule'
 
 class DATA:
     ## Settings

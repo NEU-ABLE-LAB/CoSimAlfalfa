@@ -57,10 +57,13 @@ class CoSimCore:
         self.thermostat_schedule_type = thermostat_model_information[SETTING.THERMOSTAT_SCHEDULE_TYPE]
         self.current_datetime = thermostat_model_information[SETTING.CURRENT_DATETIME]
         self.idf_db = thermostat_model_information[SETTING.IDF_DB]
+        self.experiments = thermostat_model_information[SETTING.EXPERIMENTS]
+        self.path_exp_schedule = thermostat_model_information[SETTING.PATH_EXP_SCHEDULE]
 
     def initialize(self):
         self.thermostat_model = self.thermostat_model(schedule_type=self.thermostat_schedule_type,
-                                                      current_datetime=self.current_datetime, db=self.idf_db)
+                                                      current_datetime=self.current_datetime, db=self.idf_db,
+                                                      experiments=self.experiments, path_2_exp_schedule=self.path_exp_schedule)
         init_data_dir = pathlib.Path(self.o_occupant_model_data_paths[SETTING.PATH_CSV_DIR]).resolve()
         models_dir = pathlib.Path(self.o_occupant_model_data_paths[SETTING.PATH_MODEL_DIR]).resolve()
         data_files = list(init_data_dir.iterdir())
@@ -406,7 +409,10 @@ class CoSimCore:
                 control_information[DATA.OCCUPANT_DISCOMFORT_OVERRIDE] = occupant.output['Discomfort override']
 
                 if occupant.output['Habitual override'] or occupant.output['Discomfort override']:
-                    tstat_mode, tstat_schedule, tstat_stp_cool, tstat_stp_heat = self.thermostat_model.manual_override(tstp_heat = occupant.output['T_stp_heat'], tstp_cool = occupant.output['T_stp_cool'])
+                    tstat_mode, tstat_schedule, tstat_stp_cool, tstat_stp_heat = self.thermostat_model.manual_override(
+                        tstp_heat = occupant.output['T_stp_heat'], 
+                        tstp_cool = occupant.output['T_stp_cool'],
+                        current_datetime=datetime_time_sim)
                 else:
                     tstat_mode, tstat_schedule, tstat_stp_cool, tstat_stp_heat = self.thermostat_model.update_output(current_datetime=datetime_time_sim)
                 
