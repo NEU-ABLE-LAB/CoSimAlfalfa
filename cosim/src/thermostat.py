@@ -71,7 +71,7 @@ class thermostat():
         '''
         This function returns the heating and cooling setpoints for the thermostat for the current time.
         '''
-        if self.exp_2_run is not None:
+        if self.exp_2_run is None:
             if self.schedule_type == 'default':
                 mode = 'auto'
                 if current_datetime.hour >= 6 and current_datetime.hour < 22:
@@ -96,6 +96,11 @@ class thermostat():
             self.exp_pc_deg = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_deg'].values[0]
             self.exp_pc_dur = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_dur'].values[0]
             self.exp_pc_start = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_start'].values[0]
+            
+            tstp_heat = self.exp_tstp_heat
+            tstp_cool = self.exp_tstp_cool
+            mode = 'auto'
+            schedule = self.exp_name
 
             if current_datetime.hour == self.exp_pc_start and current_datetime.minute == 0 and current_datetime.second == 0:
                 mode = 'pc'
@@ -117,22 +122,23 @@ class thermostat():
             if self.pc_start_datetime is not None:
                 if current_datetime.hour == self.pc_start_datetime.hour + self.exp_pc_dur and current_datetime.minute == 0 and current_datetime.second == 0:
                     mode = 'auto'
-                    schedule = 'home'
+                    schedule = self.exp_name
                     tstp_heat = self.exp_tstp_heat
                     tstp_cool = self.exp_tstp_cool
                     self.pc_start_datetime = None
             if self.sb_start_datetime is not None:
                 if current_datetime.hour == self.sb_start_datetime.hour + self.exp_sb_duration and current_datetime.minute == 0 and current_datetime.second == 0:
                     mode = 'auto'
-                    schedule = 'home'
+                    schedule = self.exp_name
                     tstp_heat = self.exp_tstp_heat
                     tstp_cool = self.exp_tstp_cool
                     self.sb_start_datetime = None
-                    
+
+            # Resume to regular schedule when the thermostat is manually overridden for more than 3 hours.
             if self.mode == 'manual':
                 if current_datetime - self.last_msc_datetime > datetime.timedelta(hours=3):
                     mode = 'auto'
-                    schedule = 'home'
+                    schedule = self.exp_name
                     tstp_heat = self.exp_tstp_heat
                     tstp_cool = self.exp_tstp_cool
                     self.last_msc_datetime = None
@@ -195,7 +201,7 @@ class thermostat():
         '''
         This function updates the thermostat output based on the current time and the next time the thermostat will return to its regular schedule.
         '''
-        if self.exp_2_run is not None:
+        if self.exp_2_run is None:
             if self.first_run:
                 self.mode, self.schedule, self.tstp_cool, self.tstp_heat = self.get_tstat_schedule_params(current_datetime)
                 self.first_run = False

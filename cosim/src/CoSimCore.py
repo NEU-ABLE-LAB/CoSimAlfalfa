@@ -61,8 +61,7 @@ class CoSimCore:
         self.path_exp_schedule = thermostat_model_information[SETTING.PATH_EXP_SCHEDULE]
 
     def initialize(self):
-        self.thermostat_model = self.thermostat_model(schedule_type=self.thermostat_schedule_type,
-                                                      current_datetime=self.current_datetime, db=self.idf_db,
+        self.thermostat_model = self.thermostat_model(schedule_type=self.thermostat_schedule_type, db=self.idf_db,
                                                       experiments=self.experiments, path_2_exp_schedule=self.path_exp_schedule)
         init_data_dir = pathlib.Path(self.o_occupant_model_data_paths[SETTING.PATH_CSV_DIR]).resolve()
         models_dir = pathlib.Path(self.o_occupant_model_data_paths[SETTING.PATH_MODEL_DIR]).resolve()
