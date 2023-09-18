@@ -14,7 +14,7 @@ class thermostat():
     '''
     # Define class methods
     def __init__(self,units='c', schedule_type:str = 'default',
-                    db:float = 0.0, experiments=None,path_2_exp_schedule='') -> None:
+                    db:float = 0.0, experiments=[],path_2_exp_schedule='') -> None:
         '''
         This function initializes the thermostat object.
         '''
