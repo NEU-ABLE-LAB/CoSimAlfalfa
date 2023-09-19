@@ -38,6 +38,7 @@ class SETTING():
     IDF_DB = ' idf_db'
     EXPERIMENTS = 'experiments'
     PATH_EXP_SCHEDULE = 'path_exp_schedule'
+    DAYS_PER_EXP = 'days_per_exp'
 
 class DATA:
     ## Settings

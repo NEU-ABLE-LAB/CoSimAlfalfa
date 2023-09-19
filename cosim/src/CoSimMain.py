@@ -111,9 +111,9 @@ if __name__ == "__main__":
     sys.stdout = Logger(dir_output_log_filename)
     
     # Resolve the IP address of another container by its name
-    # web_ip_address = socket.gethostbyname('web')
-    # alfalfa_url = 'http://' + web_ip_address + ':80' 
-    alfalfa_url = 'http://localhost'
+    web_ip_address = socket.gethostbyname('web')
+    alfalfa_url = 'http://' + web_ip_address + ':80' 
+    # alfalfa_url = 'http://localhost'
 
     try:
         page = requests.get(alfalfa_url, timeout=1)
@@ -127,7 +127,9 @@ if __name__ == "__main__":
     time_end = datetime.datetime(2030, 1, 1, 0, 0, 0)
     time_step_size = 1
     # steps_to_run = 60       # 1 hour for short test
-    steps_to_run = 1440 * 120
+    total_exps = 148
+    days_per_exp = 2
+    steps_to_run = 1440 * total_exps * days_per_exp   # 1440 = 1 day
     # steps_to_run = 1440 * 365 * 1    # 1440 = 1 day
     
     # Choose one of the control mode
@@ -154,8 +156,8 @@ if __name__ == "__main__":
     # 2 alfalfa_worker's will be spawned, where each worker can run a single model
     # In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
     # The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
-    num_models = 13 # Total number of tasks to be done
-    num_parallel_process = 13 # Tasks to be done simultaneously
+    num_models = 10 # Total number of tasks to be done
+    num_parallel_process = 10 # Tasks to be done simultaneously
 
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
     ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
@@ -194,15 +196,15 @@ if __name__ == "__main__":
 
     ## Create input list
     list_input = []
-    num_models = 13
-    idx_exp = 0
+    # idx_exp = 0
 
     for idx_model in range(num_models):
-        if exps[idx_exp] != 'exp_142':
-            if idx_exp % 12 == 0:
-                exps_2_run = exps[idx_exp:idx_exp+12]
-        else:
-            exps_2_run = exps[idx_exp:]
+        # if exps[idx_exp] != 'exp_142':
+        #     if idx_exp % 12 == 0:
+        #         exps_2_run = exps[idx_exp:idx_exp+12]
+        # else:
+        #     exps_2_run = exps[idx_exp:]
+        exps_2_run = exps
 
         # building model and simulation information
         building_model_information = {
@@ -239,6 +241,7 @@ if __name__ == "__main__":
             SETTING.IDF_DB: idf_db,
             SETTING.EXPERIMENTS: exps_2_run,
             SETTING.PATH_EXP_SCHEDULE:os.path.join('ip_op','tstat_exp','exps.xlsx'),
+            SETTING.DAYS_PER_EXP:days_per_exp
         }
 
         list_input.append({SETTING.BUILDING_MODEL_INFORMATION: building_model_information,
@@ -246,7 +249,7 @@ if __name__ == "__main__":
                            SETTING.OCCUPANT_MODEL_INFORMATION: occupant_model_information,
                            SETTING.THERMOSTAT_MODEL_INFORMATION: thermostat_model_information,
                            })
-        idx_exp += 12
+        # idx_exp += 12
     if num_parallel_process > 1:
         Parallel(n_jobs=num_parallel_process)\
                 (delayed(run_each_session)\

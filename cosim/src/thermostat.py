@@ -14,7 +14,7 @@ class thermostat():
     '''
     # Define class methods
     def __init__(self,units='c', schedule_type:str = 'default',
-                    db:float = 0.0, experiments=[],path_2_exp_schedule='') -> None:
+                    db:float = 0.0, experiments=[],path_2_exp_schedule='',days_per_exp=1) -> None:
         '''
         This function initializes the thermostat object.
         '''
@@ -34,6 +34,7 @@ class thermostat():
         self.exp_name = None
         self.exp_next_idx = 0
         self.exp_days_passed = 11
+        self.days_per_exp = days_per_exp
         
         if self.exp_2_run is not None:
             self.exp_schedule = pd.read_excel(path_2_exp_schedule)
@@ -110,22 +111,18 @@ class thermostat():
                 self.pc_start_datetime = current_datetime
                 self.last_msc_datetime = None
             
-            if current_datetime.hour == self.exp_sb_start and current_datetime.minute == 0 and current_datetime.second == 0:
-                mode = 'sb'
-                schedule = self.exp_name
-                tstp_heat = self.exp_tstp_heat
-                tstp_cool = self.exp_tstp_cool + self.exp_sb_offset
-                self.sb_start_datetime = current_datetime
-                self.last_msc_datetime = None
-            
             # Resume to regular schedule when the precool or setback is over.
             if self.pc_start_datetime is not None:
+                print(f"current_datetime: {current_datetime.hour}")
+                print(f"pc_start_datetime: {self.pc_start_datetime.hour}")
+
                 if current_datetime.hour == self.pc_start_datetime.hour + self.exp_pc_dur and current_datetime.minute == 0 and current_datetime.second == 0:
                     mode = 'auto'
                     schedule = self.exp_name
                     tstp_heat = self.exp_tstp_heat
                     tstp_cool = self.exp_tstp_cool
                     self.pc_start_datetime = None
+
             if self.sb_start_datetime is not None:
                 if current_datetime.hour == self.sb_start_datetime.hour + self.exp_sb_duration and current_datetime.minute == 0 and current_datetime.second == 0:
                     mode = 'auto'
@@ -133,6 +130,14 @@ class thermostat():
                     tstp_heat = self.exp_tstp_heat
                     tstp_cool = self.exp_tstp_cool
                     self.sb_start_datetime = None
+                    
+            if current_datetime.hour == self.exp_sb_start and current_datetime.minute == 0 and current_datetime.second == 0:
+                mode = 'sb'
+                schedule = self.exp_name
+                tstp_heat = self.exp_tstp_heat
+                tstp_cool = self.exp_tstp_cool + self.exp_sb_offset
+                self.sb_start_datetime = current_datetime
+                self.last_msc_datetime = None
 
             # Resume to regular schedule when the thermostat is manually overridden for more than 3 hours.
             if self.mode == 'manual':
@@ -184,7 +189,7 @@ class thermostat():
         '''
         This function updates the current experiment that the thermostat is running.
         '''
-        if self.exp_days_passed > 10:
+        if self.exp_days_passed > self.days_per_exp:
             self.exp_name = self.exp_2_run[self.exp_next_idx]
             self.exp_next_idx += 1
             self.exp_days_passed = 0
