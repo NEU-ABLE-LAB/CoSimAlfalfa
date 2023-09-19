@@ -125,19 +125,17 @@ if __name__ == "__main__":
     debug = True                # set this True to print additional information to the console
     time_start = datetime.datetime(2019, 1, 1, 0, 0, 0)
     time_end = datetime.datetime(2030, 1, 1, 0, 0, 0)
-    time_step_size = 1
-    # steps_to_run = 60       # 1 hour for short test
-    total_exps = 148
-    days_per_exp = 2
-    steps_to_run = 1440 * total_exps * days_per_exp   # 1440 = 1 day
-    # steps_to_run = 1440 * 365 * 1    # 1440 = 1 day
+    time_step_size = int(os.getenv("TIME_STEP_SIZE",default=1))
+    total_exps = int(os.getenv("TOTAL_EXPS",default=148))
+    days_per_exp = int(os.getenv("DAYS_PER_EXP",default=2))
+    steps_to_run = int(os.getenv("STEPS_TO_RUN",default=1440 * total_exps * days_per_exp))
     
     # Choose one of the control mode
     current_control_mode = CONTROL.SCHEDULE_AND_OCCUPANT_MODEL
     #current_control_mode = CONTROL.PASSTHROUGH
     #current_control_mode = CONTROL.SETPOINTS
 
-    # Manual setpoints, if CONTROL.SETPOINTS is chosen
+    # # Manual setpoints, if CONTROL.SETPOINTS is chosen
     setpoint_manual_test = {DATA.HEATING_SETPOINT_NEW: 20,
                             DATA.HEATING_SETPOINT_DEADBAND_UP: 1.5,
                             DATA.HEATING_SETPOINT_DEADBAND_DOWN: 1.5,
@@ -156,8 +154,10 @@ if __name__ == "__main__":
     # 2 alfalfa_worker's will be spawned, where each worker can run a single model
     # In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
     # The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
-    num_models = 10 # Total number of tasks to be done
-    num_parallel_process = 10 # Tasks to be done simultaneously
+    # num_models = 1 # Total number of tasks to be done
+    num_models = int(os.getenv("NUM_MODELS",default=1))
+    # num_parallel_process = 1 # Tasks to be done simultaneously
+    num_parallel_process = int(os.getenv("NUM_PARALLEL_PROCESS",default=1))
 
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
     ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
     # Initialize the name of experiments to be performed
     exps = ['Baseline: NREL constant', 'Benchmark: Simple Precooling', 'Benchmark: Adv Precooling']
-    exp_list = ['Exp_' + str(i) for i in range(1,145)]
+    exp_list = ['Exp_' + str(i) for i in range(1,total_exps-3)]
     exps.extend(exp_list)
 
     ## Create input list

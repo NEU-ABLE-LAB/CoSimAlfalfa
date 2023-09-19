@@ -88,15 +88,6 @@ class thermostat():
                 tstp_heat = round(self.F_to_C(tstp_heat))
                 tstp_cool = round(self.F_to_C(tstp_cool))
         else:
-            self.schedule_type = self.exp_name
-            self.exp_tstp_cool = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'setpoint_cool'].values[0]
-            self.exp_tstp_heat = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'setpoint_heat'].values[0]
-            self.exp_sb_offset = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'sb_offset'].values[0]
-            self.exp_sb_start = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'sb_start'].values[0]
-            self.exp_sb_duration = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'sb_duration'].values[0]
-            self.exp_pc_deg = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_deg'].values[0]
-            self.exp_pc_dur = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_dur'].values[0]
-            self.exp_pc_start = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_start'].values[0]
             
             tstp_heat = self.exp_tstp_heat
             tstp_cool = self.exp_tstp_cool
@@ -185,11 +176,12 @@ class thermostat():
     #     # else:
             
     #     return change_schedule
+    
     def update_current_exp(self,current_datetime):
         '''
         This function updates the current experiment that the thermostat is running.
         '''
-        if self.exp_days_passed > self.days_per_exp:
+        if self.exp_days_passed >= self.days_per_exp:
             self.exp_name = self.exp_2_run[self.exp_next_idx]
             self.exp_next_idx += 1
             self.exp_days_passed = 0
@@ -197,6 +189,16 @@ class thermostat():
             if self.exp_next_idx == len(self.exp_2_run):
                 self.exp_next_idx = 0
                 self.exp_days_passed += 1
+            
+            self.schedule_type = self.exp_name
+            self.exp_tstp_cool = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'setpoint_cool'].values[0]
+            self.exp_tstp_heat = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'setpoint_heat'].values[0]
+            self.exp_sb_offset = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'sb_offset'].values[0]
+            self.exp_sb_start = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'sb_start'].values[0]
+            self.exp_sb_duration = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'sb_duration'].values[0]
+            self.exp_pc_deg = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_deg'].values[0]
+            self.exp_pc_dur = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_dur'].values[0]
+            self.exp_pc_start = self.exp_schedule.loc[self.exp_schedule['exp_name'] == self.exp_name,'pc_start'].values[0]
         else:
             if current_datetime.hour == 0 and current_datetime.minute == 0 and current_datetime.second == 0:
                 self.exp_days_passed += 1
