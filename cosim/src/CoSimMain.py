@@ -113,6 +113,7 @@ if __name__ == "__main__":
     # Resolve the IP address of another container by its name
     web_ip_address = socket.gethostbyname('web')
     alfalfa_url = 'http://' + web_ip_address + ':80' 
+
     # alfalfa_url = 'http://localhost' # When running outside of containers
 
     try:
@@ -126,9 +127,9 @@ if __name__ == "__main__":
     time_start = datetime.datetime(2019, 1, 1, 0, 0, 0)
     time_end = datetime.datetime(2030, 1, 1, 0, 0, 0)
     time_step_size = int(os.getenv("TIME_STEP_SIZE",default=1))
-    total_exps = int(os.getenv("TOTAL_EXPS",default=148))
-    days_per_exp = int(os.getenv("DAYS_PER_EXP",default=2))
-    steps_to_run = int(os.getenv("STEPS_TO_RUN",default=1440 * total_exps * days_per_exp))
+    total_exps = int(os.getenv("TOTAL_EXPS",default=63))
+    days_per_exp = int(os.getenv("DAYS_PER_EXP",default=14))
+    steps_to_run = int(os.getenv("STEPS_TO_RUN",default=1440 * days_per_exp))
     
     # Choose one of the control mode
     current_control_mode = CONTROL.SCHEDULE_AND_OCCUPANT_MODEL
@@ -155,8 +156,8 @@ if __name__ == "__main__":
     In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
     The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
     '''
-    num_models = int(os.getenv("NUM_MODELS",default=1))
-    num_parallel_process = int(os.getenv("NUM_PARALLEL_PROCESS",default=1))
+    num_models = int(os.getenv("NUM_MODELS",default=63))
+    num_parallel_process = int(os.getenv("NUM_PARALLEL_PROCESS",default=10))
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
     
     '''
@@ -196,9 +197,10 @@ if __name__ == "__main__":
 
     # Create input list
     list_input = []
-
+    idx_exp = 0
     for idx_model in range(num_models):
-        exps_2_run = exps
+        exps_2_run = exps[idx_exp]
+        idx_exp += 1
 
         # building model and simulation information
         building_model_information = {
@@ -221,7 +223,7 @@ if __name__ == "__main__":
             SETTING.NUM_OCCUPANT: 1,
             SETTING.NUM_HOME: 1,
             SETTING.DISCOMFORT_THEORY: 'TFT',
-            SETTING.OCCUP_COMFORT_TEMPERATURE: 24.0,
+            SETTING.OCCUP_COMFORT_TEMPERATURE: 26.0,
             SETTING.DISCOMFORT_THEORY_THRESHOLD: {'UL': 50, 'LL': -50},
             SETTING.TFT_BETA: 1,
             SETTING.TFT_ALPHA: 0.9,
