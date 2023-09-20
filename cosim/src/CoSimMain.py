@@ -98,10 +98,10 @@ def run_each_session(index_input, input_each, steps_to_proceed):
     print(f'\t--> Tear down complete (alias: {cosim_session.alias})!\n')    
     return
 
-
 if __name__ == "__main__":
     start = timeit.default_timer()
-    ## Workplace configuration
+    
+    # Workplace configuration
     dir_workspace = os.path.dirname(os.path.dirname(__file__))
     name_output_dir = 'ip_op/output'
     dir_output = os.path.join(dir_workspace, name_output_dir)    
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # Resolve the IP address of another container by its name
     web_ip_address = socket.gethostbyname('web')
     alfalfa_url = 'http://' + web_ip_address + ':80' 
-    # alfalfa_url = 'http://localhost'
+    # alfalfa_url = 'http://localhost' # When running outside of containers
 
     try:
         page = requests.get(alfalfa_url, timeout=1)
@@ -132,10 +132,8 @@ if __name__ == "__main__":
     
     # Choose one of the control mode
     current_control_mode = CONTROL.SCHEDULE_AND_OCCUPANT_MODEL
-    #current_control_mode = CONTROL.PASSTHROUGH
-    #current_control_mode = CONTROL.SETPOINTS
 
-    # # Manual setpoints, if CONTROL.SETPOINTS is chosen
+    # Manual setpoints for initialization
     setpoint_manual_test = {DATA.HEATING_SETPOINT_NEW: 20,
                             DATA.HEATING_SETPOINT_DEADBAND_UP: 1.5,
                             DATA.HEATING_SETPOINT_DEADBAND_DOWN: 1.5,
@@ -143,44 +141,46 @@ if __name__ == "__main__":
                             DATA.COOLING_SETPOINT_DEADBAND_UP: 1.5,
                             DATA.COOLING_SETPOINT_DEADBAND_DOWN: 1.5}
    
-    # 'replicas' of docker-compose should be added to spawn multiple alfalfa_workers (# == number of models)
-    #  Example in 'docker-compose.yml' below
-    #worker:
-    #   deploy:
-    #       replicas: 2 
-    # Note: 'replicas' value == the number of alfalfa_worker's spawned == num_parallel_process)
-    # Example:
-    # if 'num_models == 4' and 'num_parallel_process == 2',
-    # 2 alfalfa_worker's will be spawned, where each worker can run a single model
-    # In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
-    # The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
-    # num_models = 1 # Total number of tasks to be done
-    num_models = int(os.getenv("NUM_MODELS",default=1))
-    # num_parallel_process = 1 # Tasks to be done simultaneously
-    num_parallel_process = int(os.getenv("NUM_PARALLEL_PROCESS",default=1))
+    '''
+    Note: 'replicas' value == the number of alfalfa_worker's spawned == num_parallel_process)
+    'replicas' of docker-compose should be added to spawn multiple alfalfa_workers (# == number of models)
+     Example in 'docker-compose.yml' below:
+        worker:
+            deploy:
+                replicas: 2
+    Example:
+        if 'num_models == 4' and 'num_parallel_process == 2',
+        2 alfalfa_worker's will be spawned, where each worker can run a single model
 
+    In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
+    The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
+    '''
+    num_models = int(os.getenv("NUM_MODELS",default=1))
+    num_parallel_process = int(os.getenv("NUM_PARALLEL_PROCESS",default=1))
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
-    ## Create building model information: pair of 'model_name' and 'conditioned_zone_name'
-    # model_name: location of the building model, under 'idf_files' folder
-    # conditioned_zone_names: list of the names of conditioned zone (Note: not tested with multi-zone case)
-    # unconditioned_zone_names: list of the names of unconditioned zone
     
-    '''model_name, conditioned_zones, unconditioned_zones =\
+    '''
+    Create building model information: pair of 'model_name' and 'conditioned_zone_name'
+    model_name: location of the building model, under 'idf_files' folder
+    conditioned_zone_names: list of the names of conditioned zone (Note: not tested with multi-zone case)
+    unconditioned_zone_names: list of the names of unconditioned zone
+    
+    Other model sample code:
+    model_name, conditioned_zones, unconditioned_zones =\
         'husky', \
         ['Zone Conditioned', ], \
-        ['Zone Unconditioned Attic', 'Zone Unconditioned Basement']'
-        '''
+        ['Zone Unconditioned Attic', 'Zone Unconditioned Basement']
     
+    model_name, conditioned_zones, unconditioned_zones =\
+        'small_green_husky', \
+        ['living_1', ], \
+        ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
+    '''
+
     model_name, conditioned_zones, unconditioned_zones =\
         'green_husky', \
         ['living_1', ], \
         ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
-    # """
-    # model_name, conditioned_zones, unconditioned_zones =\
-    #     'small_green_husky', \
-    #     ['living_1', ], \
-    #     ['garage', 'unfinishedattic', 'Dummy', 'RA Duct Zone_1']
-    # """
 
     # Read idf file for thermostat deadband
     iddfile = os.path.join('ip_op','idf_files', model_name,'V23-1-0-Energy+.idd')
@@ -194,16 +194,10 @@ if __name__ == "__main__":
     exp_list = ['Exp_' + str(i) for i in range(1,total_exps-3)]
     exps.extend(exp_list)
 
-    ## Create input list
+    # Create input list
     list_input = []
-    # idx_exp = 0
 
     for idx_model in range(num_models):
-        # if exps[idx_exp] != 'exp_142':
-        #     if idx_exp % 12 == 0:
-        #         exps_2_run = exps[idx_exp:idx_exp+12]
-        # else:
-        #     exps_2_run = exps[idx_exp:]
         exps_2_run = exps
 
         # building model and simulation information
@@ -249,7 +243,7 @@ if __name__ == "__main__":
                            SETTING.OCCUPANT_MODEL_INFORMATION: occupant_model_information,
                            SETTING.THERMOSTAT_MODEL_INFORMATION: thermostat_model_information,
                            })
-        # idx_exp += 12
+        
     if num_parallel_process > 1:
         Parallel(n_jobs=num_parallel_process)\
                 (delayed(run_each_session)\
