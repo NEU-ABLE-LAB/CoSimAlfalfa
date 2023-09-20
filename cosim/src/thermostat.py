@@ -33,27 +33,29 @@ class thermostat():
         self.db = db  # Deadband
         self.last_msc_datetime = None  # Last datetime when mode was manually changed
         self.exp_2_run = experiments  # Experiments to run
-        self.exp_name = None  # Current experiment name
-        self.exp_next_idx = 0  # Index of next experiment
-        self.exp_days_passed = 11  # Days passed in the current experiment
-        self.days_per_exp = days_per_exp  # Days per experiment
 
         # Read experiment schedule if there are experiments to run
         if self.exp_2_run is not None:
+            self.exp_name = None  # Current experiment name
+            self.exp_next_idx = 0  # Index of next experiment
+            self.exp_days_passed = 0  # Days passed in the current experiment
+            self.days_per_exp = days_per_exp  # Days per experiment
             self.exp_schedule = pd.read_excel(path_2_exp_schedule)
-        
-        # Initialize experiment-specific parameters
-        self.exp_tstp_heat = None
-        self.exp_tstp_cool = None      
-        self.exp_sb_offset = None
-        self.exp_sb_start = None
-        self.exp_sb_duration = None
-        self.exp_pc_start = None
-        self.exp_pc_deg = None
-        self.exp_pc_dur = None
-        self.pc_start_datetime = None
-        self.sb_start_datetime = None
-        
+            # Initialize experiment-specific parameters
+            self.exp_tstp_heat = None
+            self.exp_tstp_cool = None      
+            self.exp_sb_offset = None
+            self.exp_sb_start = None
+            self.exp_sb_duration = None
+            self.exp_pc_start = None
+            self.exp_pc_deg = None
+            self.exp_pc_dur = None
+            self.pc_start_datetime = None
+            self.sb_start_datetime = None
+
+            self.exp_name = self.exp_2_run[self.exp_next_idx]
+            self.assign_exp_schedule_params()
+
     # Conversion methods between Celsius and Fahrenheit
     def C_to_F(self, T):
         return (T * 9/5) + 32
@@ -150,6 +152,7 @@ class thermostat():
                 self.tstp_heat = round(self.F_to_C(tstp_heat))
                 self.tstp_cool = round(self.F_to_C(tstp_cool))
         else:
+            self.check_and_end_msc(current_datetime)
             self.check_and_start_pc(current_datetime)
             self.check_and_end_pc(current_datetime)
             self.check_and_start_sb(current_datetime)

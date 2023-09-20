@@ -224,7 +224,7 @@ if __name__ == "__main__":
             SETTING.OCCUP_COMFORT_TEMPERATURE: 24.0,
             SETTING.DISCOMFORT_THEORY_THRESHOLD: {'UL': 50, 'LL': -50},
             SETTING.TFT_BETA: 1,
-            SETTING.TFT_ALPHA: 0.6,
+            SETTING.TFT_ALPHA: 0.9,
             SETTING.PATH_OCCUPANT_MODEL_DATA: {SETTING.PATH_CSV_DIR: os.path.join('ip_op','occ_model','csv_files'),
                                                SETTING.PATH_MODEL_DIR: os.path.join('ip_op','occ_model','model_files')},
         }
