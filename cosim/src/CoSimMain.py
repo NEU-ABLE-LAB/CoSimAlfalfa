@@ -124,8 +124,8 @@ if __name__ == "__main__":
 
     ## Simulation settings
     debug = True                # set this True to print additional information to the console
-    time_start = datetime.datetime(2019, 1, 1, 0, 0, 0)
-    time_end = datetime.datetime(2030, 1, 1, 0, 0, 0)
+    time_start = datetime.datetime(2019, 7, 19, 0, 0, 0)
+    time_end = datetime.datetime(2030, 7, 19, 0, 0, 0)
     time_step_size = int(os.getenv("TIME_STEP_SIZE",default=1))
     total_exps = int(os.getenv("TOTAL_EXPS",default=63))
     days_per_exp = int(os.getenv("DAYS_PER_EXP",default=14))
@@ -192,14 +192,15 @@ if __name__ == "__main__":
 
     # Initialize the name of experiments to be performed
     exps = ['Baseline: NREL constant', 'Benchmark: Simple Precooling', 'Benchmark: Adv Precooling']
-    exp_list = ['Exp_' + str(i) for i in range(1,total_exps-3)]
+    exp_list = ['Exp_' + str(i) for i in range(1,total_exps-2)]
     exps.extend(exp_list)
-
+    print(f"Running {len(exps)} experiments")
     # Create input list
     list_input = []
     idx_exp = 0
     for idx_model in range(num_models):
-        exps_2_run = exps[idx_exp]
+        exps_2_run = [exps[idx_exp]]
+        print(f"Experiment name: {exps_2_run}")
         idx_exp += 1
 
         # building model and simulation information
