@@ -224,7 +224,7 @@ if __name__ == "__main__":
             SETTING.NUM_OCCUPANT: 1,
             SETTING.NUM_HOME: 1,
             SETTING.DISCOMFORT_THEORY: 'TFT',
-            SETTING.OCCUP_COMFORT_TEMPERATURE: 26.0,
+            SETTING.OCCUP_COMFORT_TEMPERATURE: 24.4,
             SETTING.DISCOMFORT_THEORY_THRESHOLD: {'UL': 50, 'LL': -50},
             SETTING.TFT_BETA: 1,
             SETTING.TFT_ALPHA: 0.9,
