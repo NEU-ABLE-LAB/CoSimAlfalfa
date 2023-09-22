@@ -113,22 +113,19 @@ if __name__ == "__main__":
     # Resolve the IP address of another container by its name
     web_ip_address = socket.gethostbyname('web')
     alfalfa_url = 'http://' + web_ip_address + ':80' 
-
     # alfalfa_url = 'http://localhost' # When running outside of containers
-
     try:
         page = requests.get(alfalfa_url, timeout=1)
         print(f'Connection: ESTABLISHED --> alfalfa_url: {alfalfa_url}')
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError):
         print(f'Connection: FAILED')
-
     ## Simulation settings
     debug = True                # set this True to print additional information to the console
     time_start = datetime.datetime(2019, 7, 19, 0, 0, 0)
     time_end = datetime.datetime(2030, 7, 19, 0, 0, 0)
     time_step_size = int(os.getenv("TIME_STEP_SIZE",default=1))
-    total_exps = int(os.getenv("TOTAL_EXPS",default=63))
-    days_per_exp = int(os.getenv("DAYS_PER_EXP",default=14))
+    total_exps = int(os.getenv("TOTAL_EXPS",default=1))
+    days_per_exp = int(os.getenv("DAYS_PER_EXP",default=1))
     steps_to_run = int(os.getenv("STEPS_TO_RUN",default=1440 * days_per_exp))
     
     # Choose one of the control mode
@@ -156,10 +153,9 @@ if __name__ == "__main__":
     In other words, there will be 2 batches of simulations, where each batch includes 2 simulations.
     The alfalfa_worker will be re-used to simulate the simulations in the subsequent batch --> Different from the previous versions
     '''
-    num_models = int(os.getenv("NUM_MODELS",default=63))
-    num_parallel_process = int(os.getenv("NUM_PARALLEL_PROCESS",default=10))
+    num_models = int(os.getenv("NUM_MODELS",default=1))
+    num_parallel_process = int(os.getenv("NUM_PARALLEL_PROCESS",default=1))
     print(f"Running {num_models} models with {num_parallel_process} parallel processes")
-    
     '''
     Create building model information: pair of 'model_name' and 'conditioned_zone_name'
     model_name: location of the building model, under 'idf_files' folder
@@ -240,13 +236,11 @@ if __name__ == "__main__":
             SETTING.PATH_EXP_SCHEDULE:os.path.join('ip_op','tstat_exp','exps.xlsx'),
             SETTING.DAYS_PER_EXP:days_per_exp
         }
-
         list_input.append({SETTING.BUILDING_MODEL_INFORMATION: building_model_information,
                            SETTING.SIMULATION_INFORMATION: simulation_information,
                            SETTING.OCCUPANT_MODEL_INFORMATION: occupant_model_information,
                            SETTING.THERMOSTAT_MODEL_INFORMATION: thermostat_model_information,
                            })
-        
     if num_parallel_process > 1:
         Parallel(n_jobs=num_parallel_process)\
                 (delayed(run_each_session)\
